@@ -1941,10 +1941,10 @@ function interact() {
 
     for (const npc of npcs[currentRoom] || []) {
         if (
-            npc.name === "SLEEPY GUARD" &&
-            sleepyGuard &&
-            sleepyGuard.active
-        ) continue;
+    npc.name === "SLEEPY GUARD" &&
+    sleepyGuard &&
+    (sleepyGuard.active || sleepyGuard.defeated)
+    ) continue;
 
         if (distance(player, npc) < 55) {
             const line = npc.lines[npc.line % npc.lines.length];
@@ -3042,10 +3042,10 @@ function drawCharacter(x, y, color, label) {
 function drawNPCs() {
     (npcs[currentRoom] || []).forEach(npc => {
         if (
-            npc.name === "SLEEPY GUARD" &&
-            sleepyGuard &&
-            sleepyGuard.active
-        ) return;
+    npc.name === "SLEEPY GUARD" &&
+    sleepyGuard &&
+    (sleepyGuard.active || sleepyGuard.defeated)
+    ) return;
 
         drawCharacter(npc.x, npc.y, npc.color, npc.name);
     });
