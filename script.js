@@ -46,11 +46,11 @@ let player = {
 // =====================================
 
 const musicTracks = {
-    menu: new Audio("./SOUNDTRACK/START%20MENU.mp3"),
-    exploration: new Audio("./SOUNDTRACK/EXPLORATION.mp3"),
-    fight: new Audio("./SOUNDTRACK/FIGHT.mp3"),
-    hunter: new Audio("./SOUNDTRACK/THEHUNTER.mp3"),
-    king: new Audio("./SOUNDTRACK/FINALBOSS.mp3")
+    menu: new Audio("./START%20MENU.mp3"),
+    exploration: new Audio("./EXPLORATION.mp3"),
+    fight: new Audio("./FIGHT.mp3"),
+    hunter: new Audio("./THEHUNTER.mp3"),
+    king: new Audio("./FINALBOSS.mp3")
 };
 
 let currentMusic = null;
