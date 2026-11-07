@@ -677,10 +677,13 @@ const npcs = {
         y: 180,
         color: "#8caaa9",
         lines: [
-            "You came here voluntarily?",
-            "That's... interesting.",
-            "The King keeps something precious in his throne room.",
-            "You are not safe here."
+            "WAIT,ARE YOU FROM THE SAME PLACE AS ME??!?",
+            "THE SAME KINGDOM!?!",
+            "THEY HAD CAPTURED ME,PLS HELP ME",
+            "I was on the same mission as you.",
+            "It looks like they hired new guards,because i had earlier defeated them.",
+            "After knowing that I had defeated all of his active guards,",
+            "He sent his hunter onto me,he will come when you defeat all his guards."
         ],
         line: 0
     }],
