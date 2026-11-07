@@ -7,7 +7,7 @@ const FILES_TO_CACHE = [
     "./script.js",
     "./styles.css",
     "./manifest.json",
-    "./icon.svg",
+    "./icon.png",
 
     // Soundtracks
     "./FINALBOSS.mp3",
