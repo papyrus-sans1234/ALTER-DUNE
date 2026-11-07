@@ -1,5 +1,5 @@
 
-const CACHE_NAME = "alter-dune-v1";
+const CACHE_NAME = "alter-dune-v2";
 
 const FILES_TO_CACHE = [
     "./",
