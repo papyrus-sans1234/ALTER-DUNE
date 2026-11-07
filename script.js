@@ -55,12 +55,12 @@ const musicTracks = {
 
 let currentMusic = null;
 let musicFadeTimer = null;
+let musicUnlocked = false;
 
 Object.values(musicTracks).forEach(track => {
     track.loop = true;
     track.volume = 0;
 });
-
 
 function playMusic(name) {
     const nextMusic = musicTracks[name];
@@ -75,7 +75,6 @@ function playMusic(name) {
     clearInterval(musicFadeTimer);
 
     const oldMusic = currentMusic;
-
     nextMusic.volume = 0;
 
     nextMusic.play()
@@ -86,7 +85,6 @@ function playMusic(name) {
 
             musicFadeTimer = setInterval(() => {
                 volume = Math.min(0.35, volume + 0.05);
-
                 nextMusic.volume = volume;
 
                 if (oldMusic && oldMusic !== nextMusic) {
@@ -111,7 +109,6 @@ function playMusic(name) {
         });
 }
 
-
 function stopMusic() {
     clearInterval(musicFadeTimer);
 
@@ -130,8 +127,6 @@ document.addEventListener("pointerdown", () => {
         playMusic("menu");
     }
 });
-
-        
 
 // =====================================================
 // ROOMS
@@ -463,7 +458,6 @@ function useItem(id) {
     return true;
 }
 
-// Use the currently highlighted inventory item with Z.
 function useSelectedInventoryItem() {
     if (!inventory.length) {
         showDialogue("INVENTORY", "Your inventory is empty.");
@@ -490,9 +484,7 @@ function useSelectedInventoryItem() {
     if (info.type === "healing") {
         const used = useItem(item.id);
 
-        if (used) {
-            inventoryOpen = false;
-        }
+        if (used) inventoryOpen = false;
 
         showDialogue("ITEM", battle.message);
         return;
@@ -733,6 +725,7 @@ function createEnemy(id, name, room, x, y, hp, damage, color, difficulty) {
         color,
         difficulty,
         active: true,
+        defeated: false,
         direction: 1,
         speed: difficulty === 1 ? 0.8 : 1.1,
         fleeGrace: 0,
@@ -838,11 +831,23 @@ function loadGame() {
             exploredRooms.push(currentRoom);
         }
 
+        // MIGRATE OLD SAVES AND REPAIR DEFEATED ENEMIES.
         [...enemies, hunter, king, sleepyGuard].forEach(enemy => {
             if (!enemy) return;
+
             if (!enemy.homeRoom) enemy.homeRoom = enemy.room;
             if (enemy.alerted === undefined) enemy.alerted = false;
             if (enemy.lostTimer === undefined) enemy.lostTimer = 0;
+            if (enemy.defeated === undefined) {
+                enemy.defeated = enemy.hp <= 0;
+            }
+
+            // An enemy with zero HP can never become active again.
+            if (enemy.hp <= 0 || enemy.defeated) {
+                enemy.hp = Math.max(0, enemy.hp);
+                enemy.defeated = true;
+                enemy.active = false;
+            }
         });
 
         selectedInventoryIndex = 0;
@@ -855,6 +860,7 @@ function loadGame() {
         player.y = safe.y;
 
     } catch (err) {
+        console.error("Save loading error:", err);
         alert("Save file could not be loaded.");
         return;
     }
@@ -1126,7 +1132,6 @@ function createMobileControls() {
             if (dy > 12) direction = "arrowdown";
         }
 
-        // INVENTORY: LEFT / RIGHT ONLY
         if (inventoryOpen) {
             if (
                 (direction === "arrowleft" ||
@@ -1146,7 +1151,6 @@ function createMobileControls() {
             return;
         }
 
-        // BATTLE MENU NAVIGATION
         if (!battleOpen || battle.phase !== "menu") {
             joystickMenuDirection = "";
             return;
@@ -1889,7 +1893,7 @@ function activateCheckpoint() {
 
 function wakeSleepyGuardIfReady() {
     if (!hunter || hunter.active || hunter.hp > 0) return;
-    if (!sleepyGuard || sleepyGuard.active) return;
+    if (!sleepyGuard || sleepyGuard.active || sleepyGuard.defeated) return;
 
     sleepyGuard.active = true;
     sleepyGuard.room = "barracks";
@@ -1991,11 +1995,11 @@ function interact() {
         king.active &&
         distance(player, king) < 65
     ) {
-        if (enemies.some(enemy => enemy.active)) {
+        if (enemies.some(enemy => enemy.active && !enemy.defeated)) {
             showDialogue("NARRATOR", "The castle guards still stand. Defeat every hostile guard first!");
-        } else if (hunter && hunter.active) {
+        } else if (hunter && hunter.active && !hunter.defeated) {
             showDialogue("NARRATOR", "The Hunter still guards the castle. Defeat the Hunter first!");
-        } else if (sleepyGuard && sleepyGuard.active) {
+        } else if (sleepyGuard && sleepyGuard.active && !sleepyGuard.defeated) {
             showDialogue("NARRATOR", "The awakened guard is still standing. Defeat him first!");
         } else {
             startBattle(king);
@@ -2074,10 +2078,10 @@ function moveEnemyThroughDoor(enemy, door) {
 }
 
 function unlockHunterIfReady() {
-    if (!hunter || hunter.hp <= 0 || hunter.active) return;
+    if (!hunter || hunter.defeated || hunter.hp <= 0 || hunter.active) return;
 
     const allEnemiesDefeated = enemies.every(enemy =>
-        !enemy.active || enemy.hp <= 0 || enemy.spared
+        !enemy.active || enemy.hp <= 0 || enemy.spared || enemy.defeated
     );
 
     if (!allEnemiesDefeated) return;
@@ -2097,12 +2101,13 @@ function unlockHunterIfReady() {
 // =====================================================
 
 function detectPlayer(enemy) {
-    if (!enemy.active || enemy.id === "king") return;
+    if (!enemy.active || enemy.defeated || enemy.id === "king") return;
     if (enemy.room === currentRoom) enemy.alerted = true;
 }
 
 function updateOneEnemy(enemy) {
-    if (!enemy || !enemy.active || enemy.id === "king") return;
+    if (!enemy || !enemy.active || enemy.defeated ||
+        enemy.hp <= 0 || enemy.id === "king") return;
 
     if (enemy.fleeGrace > 0) enemy.fleeGrace--;
 
@@ -2206,7 +2211,13 @@ let battle = {
 };
 
 function startBattle(enemy) {
-    if (battleOpen || !enemy || !enemy.active) return;
+    if (
+        battleOpen ||
+        !enemy ||
+        !enemy.active ||
+        enemy.defeated ||
+        enemy.hp <= 0
+    ) return;
 
     battleOpen = true;
     keys = {};
@@ -2427,6 +2438,15 @@ function performAct(action) {
 }
 
 function continueBattle() {
+    const enemy = battle.enemy;
+
+    // HP IS THE FINAL AUTHORITY.
+    // A zero-HP enemy always counts as defeated.
+    if (enemy && enemy.hp <= 0) {
+        finishBattle(true);
+        return;
+    }
+
     if (battle.message === "YOU WON!") {
         finishBattle(true);
         return;
@@ -2474,6 +2494,20 @@ function updateAim() {
 }
 
 function resolveAttack() {
+    const enemy = battle.enemy;
+
+    if (!enemy || enemy.defeated || enemy.hp <= 0) {
+        if (enemy) {
+            enemy.hp = 0;
+            enemy.defeated = true;
+            enemy.active = false;
+        }
+
+        battle.message = "YOU WON!";
+        battle.phase = "message";
+        return;
+    }
+
     const weapon = itemInfo[equippedWeapon] || { power: 3 };
     const distanceFromCentre = Math.abs(battle.aimX - 130);
 
@@ -2482,9 +2516,14 @@ function resolveAttack() {
 
     const damage = Math.max(1, Math.round(weapon.power * multiplier));
 
-    battle.enemy.hp = Math.max(0, battle.enemy.hp - damage);
+    enemy.hp = Math.max(0, enemy.hp - damage);
 
-    if (battle.enemy.hp <= 0) {
+    if (enemy.hp <= 0) {
+        // IMMEDIATELY MARK THE ENEMY AS DEFEATED.
+        enemy.hp = 0;
+        enemy.defeated = true;
+        enemy.active = false;
+
         battle.message = "YOU WON!";
         battle.phase = "message";
         return;
@@ -2634,9 +2673,14 @@ function updateDodge() {
     const arena = battle.arena;
     const heart = battle.heart;
 
-    if (!battle.enemy || (!battle.enemy.active && battle.enemy.hp <= 0)) {
+    if (
+        !battle.enemy ||
+        battle.enemy.defeated ||
+        battle.enemy.hp <= 0
+    ) {
         battle.bullets = [];
-        battle.phase = "menu";
+        battle.phase = "message";
+        battle.message = "YOU WON!";
         return;
     }
 
@@ -2717,8 +2761,21 @@ function updateDodge() {
 function finishBattle(victory, spared = false) {
     const enemy = battle.enemy;
 
+    if (!enemy) {
+        battleOpen = false;
+        battle.enemy = null;
+        return;
+    }
+
+    // EVEN IF THE MESSAGE IS WRONG, ZERO HP MEANS VICTORY.
+    if (enemy.hp <= 0) {
+        victory = true;
+        enemy.hp = 0;
+    }
+
     if (victory || spared) {
         enemy.active = false;
+        enemy.defeated = true;
 
         if (enemy.id === "hunter") {
             wakeSleepyGuardIfReady();
@@ -3064,20 +3121,40 @@ function drawEnemies() {
     if (currentRoom === "royal") drawRoyalTreasureChest();
 
     enemies.forEach(enemy => {
-        if (enemy.active && enemy.room === currentRoom) {
+        if (
+            enemy.active &&
+            !enemy.defeated &&
+            enemy.hp > 0 &&
+            enemy.room === currentRoom
+        ) {
             drawCharacter(enemy.x, enemy.y, enemy.color, enemy.name);
         }
     });
 
-    if (hunter.active && hunter.room === currentRoom) {
+    if (
+        hunter.active &&
+        !hunter.defeated &&
+        hunter.hp > 0 &&
+        hunter.room === currentRoom
+    ) {
         drawCharacter(hunter.x, hunter.y, hunter.color, hunter.name);
     }
 
-    if (sleepyGuard.active && sleepyGuard.room === currentRoom) {
+    if (
+        sleepyGuard.active &&
+        !sleepyGuard.defeated &&
+        sleepyGuard.hp > 0 &&
+        sleepyGuard.room === currentRoom
+    ) {
         drawCharacter(sleepyGuard.x, sleepyGuard.y, sleepyGuard.color, sleepyGuard.name);
     }
 
-    if (king.active && king.room === currentRoom) {
+    if (
+        king.active &&
+        !king.defeated &&
+        king.hp > 0 &&
+        king.room === currentRoom
+    ) {
         drawCharacter(king.x, king.y, king.color, king.name);
     }
 }
