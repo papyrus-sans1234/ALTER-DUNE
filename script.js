@@ -3018,19 +3018,28 @@ function drawChests() {
 // DRAW CHARACTERS
 // =====================================================
 
+
+// =====================================================
+// DRAW CHARACTERS - MEDIEVAL REDESIGN
+// =====================================================
+
 function drawCharacter(x, y, color, label) {
     const sx = x - camera.x;
     const sy = y - camera.y;
 
+    // Body
     ctx.fillStyle = color;
     ctx.fillRect(sx - 10, sy - 4, 20, 22);
 
+    // Head
     ctx.fillStyle = "#e8b68d";
     ctx.fillRect(sx - 8, sy - 16, 16, 12);
 
+    // Hair
     ctx.fillStyle = "#211b27";
     ctx.fillRect(sx - 9, sy - 19, 18, 5);
 
+    // Eyes
     ctx.fillStyle = "#171321";
     ctx.fillRect(sx - 5, sy - 12, 2, 2);
     ctx.fillRect(sx + 3, sy - 12, 2, 2);
@@ -3038,21 +3047,366 @@ function drawCharacter(x, y, color, label) {
     if (label) {
         ctx.fillStyle = "white";
         ctx.font = "10px monospace";
-        ctx.fillText(label, sx - 25, sy - 25);
+        ctx.textAlign = "center";
+        ctx.fillText(label, sx, sy - 25);
+        ctx.textAlign = "left";
+    }
+}
+
+// MEDIEVAL GUARD ARMOR
+function drawGuardCharacter(x, y, label) {
+    const sx = x - camera.x;
+    const sy = y - camera.y;
+
+    // Legs
+    ctx.fillStyle = "#393b48";
+    ctx.fillRect(sx - 8, sy + 11, 6, 9);
+    ctx.fillRect(sx + 2, sy + 11, 6, 9);
+
+    // Boots
+    ctx.fillStyle = "#29232a";
+    ctx.fillRect(sx - 9, sy + 17, 8, 4);
+    ctx.fillRect(sx + 1, sy + 17, 8, 4);
+
+    // Armor body
+    ctx.fillStyle = "#727d91";
+    ctx.fillRect(sx - 11, sy - 5, 22, 19);
+
+    // Silver chest plate
+    ctx.fillStyle = "#c4cfda";
+    ctx.fillRect(sx - 8, sy - 4, 16, 13);
+
+    // Chest plate shine
+    ctx.fillStyle = "#eef2f5";
+    ctx.fillRect(sx - 5, sy - 3, 3, 9);
+
+    // Gold belt
+    ctx.fillStyle = "#d8aa48";
+    ctx.fillRect(sx - 10, sy + 8, 20, 3);
+
+    // Shoulder armor
+    ctx.fillStyle = "#aab5c5";
+    ctx.fillRect(sx - 14, sy - 6, 6, 8);
+    ctx.fillRect(sx + 8, sy - 6, 6, 8);
+
+    // Neck
+    ctx.fillStyle = "#b98567";
+    ctx.fillRect(sx - 4, sy - 10, 8, 6);
+
+    // Helmet
+    ctx.fillStyle = "#68758c";
+    ctx.fillRect(sx - 9, sy - 21, 18, 12);
+
+    ctx.fillStyle = "#bfcbd9";
+    ctx.fillRect(sx - 7, sy - 20, 14, 5);
+
+    // Helmet visor
+    ctx.fillStyle = "#242c3c";
+    ctx.fillRect(sx - 7, sy - 13, 14, 3);
+
+    // Helmet crest
+    ctx.fillStyle = "#9d3e49";
+    ctx.fillRect(sx - 2, sy - 26, 4, 6);
+
+    // Shield
+    ctx.fillStyle = "#8b3d4b";
+    ctx.fillRect(sx + 12, sy - 2, 7, 15);
+
+    ctx.fillStyle = "#e5bd60";
+    ctx.fillRect(sx + 14, sy + 1, 3, 9);
+
+    if (label) {
+        ctx.fillStyle = "white";
+        ctx.font = "10px monospace";
+        ctx.textAlign = "center";
+        ctx.fillText(label, sx, sy - 32);
+        ctx.textAlign = "left";
+    }
+}
+
+// THE HUNTER - BLUE AND GOLD WARRIOR ARMOR
+function drawHunterCharacter(x, y, label) {
+    const sx = x - camera.x;
+    const sy = y - camera.y;
+
+    // Legs
+    ctx.fillStyle = "#173f61";
+    ctx.fillRect(sx - 9, sy + 10, 7, 11);
+    ctx.fillRect(sx + 2, sy + 10, 7, 11);
+
+    // Boots
+    ctx.fillStyle = "#d2a33e";
+    ctx.fillRect(sx - 10, sy + 18, 9, 4);
+    ctx.fillRect(sx + 1, sy + 18, 9, 4);
+
+    // Armor torso
+    ctx.fillStyle = "#155b91";
+    ctx.fillRect(sx - 12, sy - 6, 24, 19);
+
+    // Blue chest plate
+    ctx.fillStyle = "#2788bc";
+    ctx.fillRect(sx - 8, sy - 5, 16, 14);
+
+    // Gold chest decoration
+    ctx.fillStyle = "#f3c64e";
+    ctx.fillRect(sx - 2, sy - 4, 4, 12);
+    ctx.fillRect(sx - 8, sy + 2, 16, 3);
+
+    // Shoulder armor
+    ctx.fillStyle = "#e2b541";
+    ctx.fillRect(sx - 16, sy - 8, 7, 9);
+    ctx.fillRect(sx + 9, sy - 8, 7, 9);
+
+    // Neck
+    ctx.fillStyle = "#b8d5d8";
+    ctx.fillRect(sx - 4, sy - 11, 8, 6);
+
+    // Head
+    ctx.fillStyle = "#a9d6d6";
+    ctx.fillRect(sx - 8, sy - 21, 16, 13);
+
+    // Red hair / helmet crest
+    ctx.fillStyle = "#bd303d";
+    ctx.fillRect(sx - 9, sy - 24, 18, 6);
+    ctx.fillRect(sx - 5, sy - 29, 12, 6);
+    ctx.fillRect(sx + 3, sy - 33, 9, 5);
+
+    // Eyes
+    ctx.fillStyle = "#18243b";
+    ctx.fillRect(sx - 5, sy - 15, 3, 3);
+    ctx.fillRect(sx + 3, sy - 15, 3, 3);
+
+    // Gold armor edges
+    ctx.fillStyle = "#ffdb71";
+    ctx.fillRect(sx - 12, sy - 6, 2, 17);
+    ctx.fillRect(sx + 10, sy - 6, 2, 17);
+
+    if (label) {
+        ctx.fillStyle = "#ffdb71";
+        ctx.font = "10px monospace";
+        ctx.textAlign = "center";
+        ctx.fillText(label, sx, sy - 40);
+        ctx.textAlign = "left";
+    }
+}
+
+// THE KING - ROYAL DESIGN
+function drawKingCharacter(x, y, label) {
+    const sx = x - camera.x;
+    const sy = y - camera.y;
+
+    // Royal robe
+    ctx.fillStyle = "#54234e";
+    ctx.fillRect(sx - 15, sy - 4, 30, 25);
+
+    // Red robe center
+    ctx.fillStyle = "#8d2946";
+    ctx.fillRect(sx - 9, sy - 4, 18, 24);
+
+    // Gold robe decorations
+    ctx.fillStyle = "#eac052";
+    ctx.fillRect(sx - 13, sy - 3, 3, 23);
+    ctx.fillRect(sx + 10, sy - 3, 3, 23);
+    ctx.fillRect(sx - 4, sy + 3, 8, 3);
+
+    // Royal collar
+    ctx.fillStyle = "#f2ce62";
+    ctx.fillRect(sx - 10, sy - 8, 20, 6);
+
+    // Head
+    ctx.fillStyle = "#e8b68d";
+    ctx.fillRect(sx - 9, sy - 21, 18, 14);
+
+    // Beard
+    ctx.fillStyle = "#ddd2c0";
+    ctx.fillRect(sx - 7, sy - 11, 14, 7);
+    ctx.fillRect(sx - 5, sy - 4, 10, 3);
+
+    // Eyes
+    ctx.fillStyle = "#211b27";
+    ctx.fillRect(sx - 5, sy - 16, 3, 2);
+    ctx.fillRect(sx + 3, sy - 16, 3, 2);
+
+    // Crown base
+    ctx.fillStyle = "#e8bd48";
+    ctx.fillRect(sx - 11, sy - 25, 22, 5);
+
+    // Crown points
+    ctx.fillRect(sx - 10, sy - 30, 5, 6);
+    ctx.fillRect(sx - 2, sy - 33, 5, 9);
+    ctx.fillRect(sx + 6, sy - 30, 5, 6);
+
+    // Crown jewels
+    ctx.fillStyle = "#c33b55";
+    ctx.fillRect(sx - 2, sy - 25, 5, 3);
+
+    // Royal shoes
+    ctx.fillStyle = "#29232a";
+    ctx.fillRect(sx - 11, sy + 19, 9, 4);
+    ctx.fillRect(sx + 2, sy + 19, 9, 4);
+
+    if (label) {
+        ctx.fillStyle = "#ffdc76";
+        ctx.font = "10px monospace";
+        ctx.textAlign = "center";
+        ctx.fillText(label, sx, sy - 40);
+        ctx.textAlign = "left";
     }
 }
 
 function drawNPCs() {
     (npcs[currentRoom] || []).forEach(npc => {
         if (
-    npc.name === "SLEEPY GUARD" &&
-    sleepyGuard &&
-    (sleepyGuard.active || sleepyGuard.defeated)
-    ) return;
+            npc.name === "SLEEPY GUARD" &&
+            sleepyGuard &&
+            (sleepyGuard.active || sleepyGuard.defeated)
+        ) return;
 
-        drawCharacter(npc.x, npc.y, npc.color, npc.name);
+        if (
+            npc.name === "SLEEPY GUARD" ||
+            npc.name === "OLD KNIGHT"
+        ) {
+            drawGuardCharacter(npc.x, npc.y, npc.name);
+        } else {
+            drawCharacter(npc.x, npc.y, npc.color, npc.name);
+        }
     });
 }
+
+function drawRoyalTreasureChest() {
+    if (currentRoom !== "royal" || !king) return;
+
+    const x = 320 - camera.x;
+    const y = 66 - camera.y;
+
+    const glow = ctx.createRadialGradient(x, y + 13, 8, x, y + 13, 82);
+    glow.addColorStop(0, "rgba(255, 205, 75, 0.34)");
+    glow.addColorStop(1, "rgba(255, 174, 40, 0)");
+
+    ctx.fillStyle = glow;
+    ctx.fillRect(x - 90, y - 65, 180, 145);
+
+    ctx.fillStyle = "#512b16";
+    ctx.fillRect(x - 49, y - 8, 98, 19);
+
+    ctx.fillStyle = "#b87522";
+    ctx.fillRect(x - 46, y - 18, 92, 20);
+
+    ctx.fillStyle = "#f4bd45";
+    ctx.fillRect(x - 42, y - 15, 84, 5);
+
+    ctx.fillStyle = "#704018";
+    ctx.fillRect(x - 54, y + 2, 108, 43);
+
+    ctx.fillStyle = "#c98228";
+    ctx.fillRect(x - 49, y + 5, 98, 35);
+
+    ctx.fillStyle = "#f5c34e";
+    ctx.fillRect(x - 49, y + 5, 98, 5);
+
+    ctx.fillStyle = "#f8d878";
+    ctx.fillRect(x - 35, y - 17, 8, 61);
+    ctx.fillRect(x + 27, y - 17, 8, 61);
+    ctx.fillRect(x - 7, y + 9, 14, 19);
+
+    ctx.fillStyle = "#fff0a6";
+    ctx.fillRect(x - 3, y + 13, 6, 7);
+
+    ctx.fillStyle = "#6b421e";
+    ctx.fillRect(x - 1, y + 20, 2, 5);
+
+    ctx.fillStyle = "#ffe49a";
+
+    for (const dx of [-43, 43]) {
+        ctx.fillRect(x + dx - 2, y + 10, 4, 4);
+        ctx.fillRect(x + dx - 2, y + 32, 4, 4);
+    }
+
+    if (!king.active && hasItem("kings_key")) {
+        ctx.save();
+        ctx.translate(x + 72, y + 25);
+        ctx.rotate(-0.35);
+
+        ctx.fillStyle = "#ffe36b";
+        ctx.fillRect(-3, -17, 6, 28);
+        ctx.fillRect(-8, -19, 16, 6);
+        ctx.fillRect(-8, -19, 5, 12);
+        ctx.fillRect(3, -19, 5, 12);
+        ctx.fillRect(1, 5, 8, 5);
+        ctx.fillRect(5, 10, 4, 6);
+
+        ctx.restore();
+    }
+}
+
+function drawEnemies() {
+    if (currentRoom === "royal") drawRoyalTreasureChest();
+
+    enemies.forEach(enemy => {
+        if (
+            enemy.active &&
+            !enemy.defeated &&
+            enemy.hp > 0 &&
+            enemy.room === currentRoom
+        ) {
+            drawGuardCharacter(enemy.x, enemy.y, enemy.name);
+        }
+    });
+
+    if (
+        hunter.active &&
+        !hunter.defeated &&
+        hunter.hp > 0 &&
+        hunter.room === currentRoom
+    ) {
+        drawHunterCharacter(hunter.x, hunter.y, hunter.name);
+    }
+
+    if (
+        sleepyGuard.active &&
+        !sleepyGuard.defeated &&
+        sleepyGuard.hp > 0 &&
+        sleepyGuard.room === currentRoom
+    ) {
+        drawGuardCharacter(
+            sleepyGuard.x,
+            sleepyGuard.y,
+            sleepyGuard.name
+        );
+    }
+
+    if (
+        king.active &&
+        !king.defeated &&
+        king.hp > 0 &&
+        king.room === currentRoom
+    ) {
+        drawKingCharacter(king.x, king.y, king.name);
+    }
+}
+
+function drawPlayer() {
+    const x = player.x - camera.x;
+    const y = player.y - camera.y;
+
+    ctx.fillStyle = "#4a8ac7";
+    ctx.fillRect(x - 9, y - 5, 18, 17);
+
+    ctx.fillStyle = "#e8b68d";
+    ctx.fillRect(x - 8, y - 16, 16, 12);
+
+    ctx.fillStyle = "#392b27";
+    ctx.fillRect(x - 9, y - 18, 18, 5);
+
+    ctx.fillStyle = "#171321";
+    ctx.fillRect(x - 5, y - 12, 2, 2);
+    ctx.fillRect(x + 3, y - 12, 2, 2);
+
+    ctx.fillStyle = "#302a43";
+    ctx.fillRect(x - 7, y + 11, 5, 6);
+    ctx.fillRect(x + 3, y + 11, 5, 6);
+}
+
 
 function drawRoyalTreasureChest() {
     if (currentRoom !== "royal" || !king) return;
