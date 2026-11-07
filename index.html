@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ALTER DUNE</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#101018">
 </head>
 <body>
 
@@ -60,9 +62,18 @@
     </section>
 
     <footer>
-        TARBOOZ WALA © 2026 | DEMO 0.1
+        ALTERDUNE © 2026 | V1.0
     </footer>
 
     <script src="script.js"></script>
+    <script>
+if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./service-worker.js")
+            .then(() => console.log("ALTER DUNE: PWA ready!"))
+            .catch(error => console.error("PWA error:", error));
+    });
+}
+</script>
 </body>
 </html>
