@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ALTER DUNE</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <header class="topbar">
+        <div class="logo">ALTER DUNE</div>
+        <div class="subtitle">THE HUNTER'S CASTLE</div>
+    </header>
+
+    <!-- MAIN MENU -->
+    <section id="menuScreen" class="screen">
+        <div class="menu-content">
+            <h1>ALTER<br>DUNE</h1>
+            <p class="tagline">The treasure is not where it belongs.</p>
+
+            <button id="newGameBtn">NEW GAME</button>
+            <button id="continueBtn">CONTINUE</button>
+            <button id="controlsBtn">CONTROLS</button>
+
+            <p id="menuMessage"></p>
+        </div>
+    </section>
+
+    <!-- GAME -->
+    <section id="gameScreen" class="screen hidden">
+
+        <div class="game-header">
+            <span id="locationName">CASTLE ENTRANCE</span>
+            <button id="pauseBtn">PAUSE [ESC]</button>
+        </div>
+
+        <div class="game-container">
+            <canvas id="gameCanvas" width="640" height="400"></canvas>
+
+            <div id="dialogueBox" class="dialogue-box hidden">
+                <strong id="speaker">NARRATOR</strong>
+                <p id="dialogueText"></p>
+                <small>PRESS E OR ENTER</small>
+            </div>
+
+            <div id="pauseScreen" class="overlay hidden">
+                <h2>PAUSED</h2>
+                <button id="resumeBtn">RESUME</button>
+                <button id="saveBtn">SAVE GAME</button>
+                <button id="mainMenuBtn">MAIN MENU</button>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <span id="playerStatus">HP: 20 / 20</span>
+            <span id="saveStatus">NOT SAVED</span>
+        </div>
+
+    </section>
+
+    <footer>
+        TARBOOZ WALA © 2026 | DEMO 0.1
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,386 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background: #100d18;
+    color: white;
+    font-family: 'Press Start 2P', monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.topbar {
+    padding: 18px 25px;
+    background: #171321;
+    border-bottom: 3px solid #49365e;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 10px;
+}
+
+.logo {
+    color: #ffca64;
+}
+
+.subtitle {
+    color: #9990a8;
+    font-size: 8px;
+}
+
+.screen {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* MENU */
+
+.menu-content {
+    text-align: center;
+    width: 100%;
+    max-width: 500px;
+}
+
+.menu-content h1 {
+    font-size: clamp(35px, 8vw, 65px);
+    line-height: 1.5;
+    color: #ffca64;
+    text-shadow: 5px 5px #713b35;
+    margin-bottom: 20px;
+}
+
+.tagline {
+    color: #aaa1b8;
+    font-size: 9px;
+    line-height: 2;
+    margin-bottom: 35px;
+}
+
+button {
+    font-family: inherit;
+    cursor: pointer;
+    color: white;
+    background: #211b2d;
+    border: 2px solid #aaa1b8;
+    padding: 16px;
+    font-size: 10px;
+    transition: 0.15s;
+}
+
+button:hover:not(:disabled) {
+    color: #ffca64;
+    border-color: #ffca64;
+    transform: scale(1.04);
+}
+
+button:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.menu-content button {
+    display: block;
+    width: 230px;
+    margin: 12px auto;
+}
+
+#menuMessage {
+    margin-top: 25px;
+    font-size: 8px;
+    color: #aaa1b8;
+    line-height: 2;
+}
+
+/* GAME */
+
+#gameScreen {
+    flex-direction: column;
+    gap: 12px;
+}
+
+.game-container {
+    position: relative;
+    width: min(640px, 95vw);
+    border: 4px solid #b5a5c9;
+    background: black;
+    box-shadow: 0 0 25px #000;
+}
+
+canvas {
+    width: 100%;
+    display: block;
+    image-rendering: pixelated;
+    background: #171321;
+}
+
+.game-header,
+.status-bar {
+    width: min(640px, 95vw);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 9px;
+    gap: 10px;
+}
+
+.game-header {
+    color: #ffca64;
+}
+
+.status-bar {
+    color: #aaa1b8;
+}
+
+.small-button,
+#pauseBtn {
+    padding: 10px;
+    font-size: 8px;
+}
+
+/* DIALOGUE */
+
+.dialogue-box {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    right: 10px;
+    min-height: 105px;
+    padding: 15px;
+    background: #09080d;
+    border: 3px solid white;
+    z-index: 5;
+}
+
+.dialogue-speaker,
+#speaker {
+    color: #ffca64;
+    font-size: 10px;
+}
+
+.dialogue-box p {
+    font-size: 10px;
+    line-height: 2;
+    margin-top: 12px;
+    min-height: 25px;
+}
+
+.dialogue-box small {
+    display: block;
+    text-align: right;
+    color: #aaa1b8;
+    font-size: 7px;
+    margin-top: 5px;
+}
+
+/* PAUSE */
+
+.overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+}
+
+.overlay h2 {
+    color: #ffca64;
+    font-size: 25px;
+    margin-bottom: 15px;
+}
+
+.overlay button {
+    width: 200px;
+}
+
+/* FOOTER */
+
+footer {
+    padding: 15px;
+    text-align: center;
+    color: #625a70;
+    font-size: 7px;
+}
+
+@media (max-width: 500px) {
+    .topbar {
+        font-size: 8px;
+        padding: 14px;
+    }
+
+    .subtitle {
+        display: none;
+    }
+
+    .game-header,
+    .status-bar {
+        font-size: 7px;
+    }
+}
+/* =====================================================
+   TARBOOZ WALA - VISUAL UPGRADE
+   ===================================================== */
+
+:root {
+    --gold: #ffd477;
+    --gold-bright: #fff0ad;
+    --purple: #241b35;
+    --text-muted: #b9aec9;
+}
+
+body {
+    background:
+        radial-gradient(ellipse at 50% 0%, rgba(104, 66, 132, 0.24), transparent 48%),
+        radial-gradient(ellipse at 50% 100%, rgba(68, 39, 83, 0.2), transparent 55%),
+        #0b0911;
+}
+
+.topbar {
+    background: linear-gradient(180deg, #21192d, #15111e);
+    border-bottom: 2px solid #806044;
+    box-shadow: 0 5px 22px rgba(0, 0, 0, 0.42);
+}
+
+.logo {
+    color: var(--gold-bright);
+    text-shadow: 0 0 9px rgba(255, 202, 100, 0.42);
+}
+
+.subtitle,
+.tagline,
+#menuMessage {
+    color: var(--text-muted);
+}
+
+.screen {
+    background-image:
+        radial-gradient(circle at 15% 20%, rgba(255, 207, 125, 0.035) 0 2px, transparent 3px),
+        radial-gradient(circle at 80% 70%, rgba(190, 151, 255, 0.04) 0 2px, transparent 3px);
+    background-size: 46px 46px, 61px 61px;
+}
+
+.menu-content {
+    padding: 34px 24px;
+    border: 2px solid rgba(194, 155, 105, 0.42);
+    background: linear-gradient(145deg, rgba(40, 29, 53, 0.88), rgba(15, 12, 22, 0.94));
+    box-shadow: 0 0 0 6px rgba(10, 8, 15, 0.45), 0 18px 55px rgba(0, 0, 0, 0.48);
+}
+
+.menu-content h1 {
+    color: var(--gold-bright);
+    text-shadow: 3px 3px #75452f, 0 0 22px rgba(255, 197, 91, 0.3);
+    letter-spacing: 2px;
+}
+
+button {
+    color: #f8f1ff;
+    background: linear-gradient(180deg, #342744, #1c1728);
+    border: 2px solid #8e7a9f;
+    box-shadow: 0 4px 0 #100c17, inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+button:hover:not(:disabled) {
+    color: var(--gold-bright);
+    border-color: var(--gold);
+    background: linear-gradient(180deg, #493653, #292033);
+    box-shadow: 0 4px 0 #100c17, 0 0 16px rgba(255, 202, 100, 0.2);
+    transform: translateY(-2px);
+}
+
+button:active:not(:disabled) {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 #100c17;
+}
+
+.game-container {
+    border: 4px solid #9e866c;
+    outline: 2px solid rgba(255, 215, 145, 0.22);
+    background: #09070d;
+    box-shadow: 0 0 0 5px #171020, 0 0 28px rgba(0, 0, 0, 0.85), 0 0 32px rgba(166, 112, 67, 0.12);
+}
+
+canvas {
+    background: #171321;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+}
+
+.game-header {
+    color: var(--gold-bright);
+    text-shadow: 0 0 8px rgba(255, 202, 100, 0.22);
+}
+
+.status-bar {
+    color: #c2b5d2;
+}
+
+.dialogue-box {
+    background: linear-gradient(145deg, rgba(13, 10, 19, 0.98), rgba(25, 18, 33, 0.98));
+    border: 3px solid #e7d9c2;
+    outline: 2px solid rgba(255, 211, 135, 0.24);
+    box-shadow: 0 0 22px rgba(0, 0, 0, 0.75), inset 0 0 18px rgba(143, 105, 173, 0.08);
+}
+
+.dialogue-speaker,
+#speaker {
+    color: var(--gold-bright);
+    text-shadow: 0 0 8px rgba(255, 202, 100, 0.25);
+}
+
+.dialogue-box p {
+    color: #f5effb;
+}
+
+.overlay {
+    background: radial-gradient(ellipse at center, rgba(35, 24, 48, 0.96), rgba(5, 4, 8, 0.98));
+    backdrop-filter: blur(3px);
+}
+
+.overlay h2 {
+    color: var(--gold-bright);
+    text-shadow: 0 0 15px rgba(255, 202, 100, 0.28);
+}
+
+footer {
+    color: #82758f;
+}
+
+button:focus-visible {
+    outline: 3px solid var(--gold-bright);
+    outline-offset: 4px;
+}
+
+@media (max-width: 500px) {
+    .menu-content {
+        padding: 25px 14px;
+    }
+
+    .menu-content h1 {
+        letter-spacing: 0;
+    }
+
+    .dialogue-box {
+        padding: 11px;
+        min-height: 95px;
+    }
+
+    .dialogue-box p {
+        font-size: 8px;
+    }
+}
