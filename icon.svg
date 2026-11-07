@@ -1,0 +1,15 @@
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x2="0" y2="1">
+      <stop stop-color="#080016"/>
+      <stop offset="1" stop-color="#6500bd"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="80" fill="url(#bg)"/>
+  <circle cx="256" cy="170" r="125" fill="#df9cff"/>
+  <path d="M80 300 L140 190 175 245 220 130 256 220 300 145 350 240 410 180 460 300Z" fill="#17072d"/>
+  <path d="M180 310V250L220 220V270L256 190 292 270V220L332 250V310Z" fill="#080016"/>
+  <text x="256" y="365" text-anchor="middle" font-size="76" font-weight="bold" fill="white">ALTER</text>
+  <text x="256" y="440" text-anchor="middle" font-size="82" font-weight="bold" fill="#d28aff">DUNE</text>
+</svg>
