@@ -3255,20 +3255,43 @@ function drawKingCharacter(x, y, label) {
 }
 
 function drawNPCs() {
-    (npcs[currentRoom] || []).forEach(npc => {
+    const roomNPCs = npcs[currentRoom] || [];
+
+    roomNPCs.forEach(npc => {
+        if (!npc) return;
+
+        // Hide sleepy guard when handled by the special guard system
         if (
             npc.name === "SLEEPY GUARD" &&
             sleepyGuard &&
             (sleepyGuard.active || sleepyGuard.defeated)
-        ) return;
-
-        if (
-            npc.name === "SLEEPY GUARD" ||
-            npc.name === "OLD KNIGHT"
         ) {
-            drawGuardCharacter(npc.x, npc.y, npc.name);
-        } else {
-            drawCharacter(npc.x, npc.y, npc.color, npc.name);
+            return;
+        }
+
+        // Character type selection
+        switch (npc.name) {
+            case "SLEEPY GUARD":
+            case "OLD KNIGHT":
+                drawGuardCharacter(npc.x, npc.y, npc.name);
+                break;
+
+            case "THE HUNTER":
+                drawHunterCharacter(npc.x, npc.y, npc.name);
+                break;
+
+            case "THE KING":
+                drawKingCharacter(npc.x, npc.y, npc.name);
+                break;
+
+            default:
+                drawCharacter(
+                    npc.x,
+                    npc.y,
+                    npc.color || "#777777",
+                    npc.name || ""
+                );
+                break;
         }
     });
 }
