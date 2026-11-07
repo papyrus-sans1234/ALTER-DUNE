@@ -46,11 +46,11 @@ let player = {
 // =====================================
 
 const musicTracks = {
-    menu: new Audio("./START%20MENU.mp3"),
-    exploration: new Audio("./EXPLORATION.mp3"),
-    fight: new Audio("./FIGHT.mp3"),
-    hunter: new Audio("./THEHUNTER.mp3"),
-    king: new Audio("./FINALBOSS.mp3")
+    menu: new Audio("./SOUNDTRACK/START%20MENU.mp3"),
+    exploration: new Audio("./SOUNDTRACK/EXPLORATION.mp3"),
+    fight: new Audio("./SOUNDTRACK/FIGHT.mp3"),
+    hunter: new Audio("./SOUNDTRACK/THEHUNTER.mp3"),
+    king: new Audio("./SOUNDTRACK/FINALBOSS.mp3")
 };
 
 let currentMusic = null;
@@ -177,7 +177,7 @@ const rooms = {
         ]),
         doors: [
             { x: 9, y: 1, target: "library", sx: 320, sy: 340 },
-            { x: 1, y: 6, target: "barracks", sx: 550, sy: 340 },      
+            { x: 1, y: 6, target: "barracks", sx: 550, sy: 340 },
             { x: 18, y: 6, target: "exit", sx: 48, sy: 208 },
             { x: 1, y: 12, target: "entrance", sx: 320, sy: 340 },
             { x: 4, y: 12, target: "armory", sx: 320, sy: 340 },
@@ -326,7 +326,6 @@ const rooms = {
         ]
     },
 
-    // THE OLD VAULT IS NOW THE EXIT ROOM.
     exit: {
         name: "CASTLE EXIT",
         map: makeMap([
@@ -352,7 +351,6 @@ const rooms = {
     }
 };
 
-// The exterior exit is at the top of the Exit Room.
 const exitDoorPosition = {
     x: 9 * TILE + 16,
     y: 1 * TILE + 16
@@ -363,61 +361,16 @@ const exitDoorPosition = {
 // =====================================================
 
 const itemInfo = {
-    wooden_sword: {
-        name: "Wooden Sword",
-        type: "weapon",
-        power: 5
-    },
-
-    frying_pan: {
-        name: "Frying Pan",
-        type: "weapon",
-        power: 8
-    },
-
-    toy_knife: {
-        name: "Toy Knife",
-        type: "weapon",
-        power: 3
-    },
-
-    bread: {
-        name: "Bread",
-        type: "healing",
-        heal: 8
-    },
-
-    apple: {
-        name: "Castle Apple",
-        type: "healing",
-        heal: 15
-    },
-
-    medkit: {
-        name: "Medkit",
-        type: "healing",
-        fullHeal: true
-    },
-
-    golden_coin: {
-        name: "Golden Coin",
-        type: "misc"
-    },
-
-    old_key: {
-        name: "Old Key",
-        type: "key"
-    },
-
-    kings_key: {
-        name: "King's Key",
-        type: "key"
-    },
-
-    royal_treasure: {
-        name: "Royal Treasure",
-        type: "treasure"
-    }
+    wooden_sword: { name: "Wooden Sword", type: "weapon", power: 5 },
+    frying_pan: { name: "Frying Pan", type: "weapon", power: 8 },
+    toy_knife: { name: "Toy Knife", type: "weapon", power: 3 },
+    bread: { name: "Bread", type: "healing", heal: 8 },
+    apple: { name: "Castle Apple", type: "healing", heal: 15 },
+    medkit: { name: "Medkit", type: "healing", fullHeal: true },
+    golden_coin: { name: "Golden Coin", type: "misc" },
+    old_key: { name: "Old Key", type: "key" },
+    kings_key: { name: "King's Key", type: "key" },
+    royal_treasure: { name: "Royal Treasure", type: "treasure" }
 };
 
 let inventory = [{ id: "wooden_sword", qty: 1 }];
@@ -483,10 +436,7 @@ function useItem(id) {
         if (info.fullHeal) {
             player.hp = player.maxHp;
         } else {
-            player.hp = Math.min(
-                player.maxHp,
-                player.hp + info.heal
-            );
+            player.hp = Math.min(player.maxHp, player.hp + info.heal);
         }
 
         removeItem(id);
@@ -505,6 +455,60 @@ function useItem(id) {
     return true;
 }
 
+// Use the currently highlighted inventory item with Z.
+function useSelectedInventoryItem() {
+    if (!inventory.length) {
+        showDialogue("INVENTORY", "Your inventory is empty.");
+        return;
+    }
+
+    const item = inventory[selectedInventoryIndex];
+    if (!item) return;
+
+    const info = itemInfo[item.id];
+    if (!info) return;
+
+    if (info.type === "weapon") {
+        equippedWeapon = item.id;
+        inventoryOpen = false;
+
+        showDialogue(
+            "INVENTORY",
+            "Equipped " + info.name + "."
+        );
+        return;
+    }
+
+    if (info.type === "healing") {
+        const used = useItem(item.id);
+
+        if (used) {
+            inventoryOpen = false;
+        }
+
+        showDialogue("ITEM", battle.message);
+        return;
+    }
+
+    if (info.type === "misc") {
+        showDialogue(
+            "INVENTORY",
+            "You examined the " + info.name + "."
+        );
+        return;
+    }
+
+    if (info.type === "key" || info.type === "treasure") {
+        showDialogue(
+            "INVENTORY",
+            "This item may be important later."
+        );
+        return;
+    }
+
+    showDialogue("INVENTORY", "You cannot use this item right now.");
+}
+
 // =====================================================
 // FURNITURE
 // =====================================================
@@ -514,50 +518,42 @@ const furniture = {
         { x: 5, y: 2, type: "barrel" },
         { x: 12, y: 2, type: "cushion" }
     ],
-
     hall: [
         { x: 4, y: 5, type: "table" },
         { x: 14, y: 5, type: "table" },
         { x: 5, y: 9, type: "cushion" },
         { x: 13, y: 9, type: "cushion" }
     ],
-
     barracks: [
         { x: 4, y: 3, type: "box" },
         { x: 14, y: 3, type: "box" },
         { x: 8, y: 9, type: "table" }
     ],
-
     library: [
         { x: 5, y: 1, type: "bookshelf" },
         { x: 14, y: 1, type: "bookshelf" },
         { x: 5, y: 7, type: "bookshelf" },
         { x: 14, y: 7, type: "bookshelf" }
     ],
-
     armory: [
         { x: 4, y: 2, type: "box" },
         { x: 15, y: 2, type: "box" },
         { x: 8, y: 9, type: "table" }
     ],
-
     dungeon: [
         { x: 4, y: 1, type: "barrel" },
         { x: 15, y: 1, type: "barrel" },
         { x: 5, y: 10, type: "box" }
     ],
-
     garden: [
         { x: 4, y: 3, type: "cushion" },
         { x: 14, y: 8, type: "cushion" }
     ],
-
     royal: [
         { x: 5, y: 4, type: "table" },
         { x: 14, y: 4, type: "table" },
         { x: 9, y: 9, type: "cushion" }
     ],
-
     exit: [
         { x: 4, y: 3, type: "box" },
         { x: 15, y: 3, type: "box" }
@@ -577,38 +573,14 @@ const furnitureInfo = {
 // =====================================================
 
 const chests = {
-    entrance: [
-        { x: 15, y: 10, items: ["toy_knife", "bread"] }
-    ],
-
-    hall: [
-        { x: 3, y: 2, items: ["bread"] }
-    ],
-
-    barracks: [
-        { x: 10, y: 5, items: ["bread", "golden_coin"] }
-    ],
-
-    library: [
-        { x: 15, y: 11, items: ["golden_coin", "medkit"] }
-    ],
-
-    armory: [
-        { x: 15, y: 10, items: ["frying_pan"] }
-    ],
-
-    dungeon: [
-        { x: 15, y: 10, items: ["apple", "old_key"] }
-    ],
-
-    garden: [
-        { x: 10, y: 5, items: ["apple"] }
-    ],
-
-    royal: [
-        { x: 3, y: 10, items: ["bread"] }
-    ],
-
+    entrance: [{ x: 15, y: 10, items: ["toy_knife", "bread"] }],
+    hall: [{ x: 3, y: 2, items: ["bread"] }],
+    barracks: [{ x: 10, y: 5, items: ["bread", "golden_coin"] }],
+    library: [{ x: 15, y: 11, items: ["golden_coin", "medkit"] }],
+    armory: [{ x: 15, y: 10, items: ["frying_pan"] }],
+    dungeon: [{ x: 15, y: 10, items: ["apple", "old_key"] }],
+    garden: [{ x: 10, y: 5, items: ["apple"] }],
+    royal: [{ x: 3, y: 10, items: ["bread"] }],
     exit: []
 };
 
@@ -646,7 +618,6 @@ const npcs = {
             ],
             line: 0
         },
-
         {
             name: "OLD KNIGHT",
             x: 470,
@@ -661,7 +632,6 @@ const npcs = {
         }
     ],
 
-    // This NPC wakes up after the Hunter is defeated.
     barracks: [{
         name: "SLEEPY GUARD",
         x: 320,
@@ -745,26 +715,21 @@ function createEnemy(id, name, room, x, y, hp, damage, color, difficulty) {
     return {
         id,
         name,
-
         homeRoom: room,
         room,
         x,
         y,
-
         hp,
         maxHp: hp,
         damage,
         color,
         difficulty,
-
         active: true,
         direction: 1,
         speed: difficulty === 1 ? 0.8 : 1.1,
-
         fleeGrace: 0,
         actScore: 0,
         spared: false,
-
         alerted: false,
         lostTimer: 0,
         patrolTimer: 0
@@ -773,99 +738,27 @@ function createEnemy(id, name, room, x, y, hp, damage, color, difficulty) {
 
 function resetEnemies() {
     enemies = [
-        // Original guards.
-        createEnemy(
-            "guard1", "CASTLE GUARD",
-            "barracks", 250, 190,
-            24, 4, "#b36a77", 1
-        ),
-
-        createEnemy(
-            "guard2", "CASTLE GUARD",
-            "armory", 450, 200,
-            28, 5, "#b36a77", 1
-        ),
-
-        createEnemy(
-            "dungeon_guard", "DUNGEON GUARD",
-            "dungeon", 220, 180,
-            35, 6, "#9c637d", 2
-        ),
-
-        // One additional guard in EVERY room.
-        createEnemy(
-            "entrance_guard", "ENTRANCE GUARD",
-            "entrance", 480, 190,
-            24, 4, "#b36a77", 1
-        ),
-
-        createEnemy(
-            "hall_guard", "HALL GUARD",
-            "hall", 250, 270,
-            28, 5, "#b36a77", 1
-        ),
-
-        createEnemy(
-            "barracks_guard", "BARRACKS GUARD",
-            "barracks", 480, 300,
-            28, 5, "#b36a77", 1
-        ),
-
-        createEnemy(
-            "library_guard", "LIBRARY GUARD",
-            "library", 480, 300,
-            24, 4, "#9274ad", 1
-        ),
-
-        createEnemy(
-            "armory_guard", "ARMORY GUARD",
-            "armory", 160, 280,
-            28, 5, "#b36a77", 1
-        ),
-
-        createEnemy(
-            "garden_guard", "GARDEN GUARD",
-            "garden", 480, 190,
-            24, 4, "#719e68", 1
-        ),
-
-        createEnemy(
-            "royal_guard", "ROYAL GUARD",
-            "royal", 500, 300,
-            32, 5, "#bd8b43", 2
-        ),
-
-        createEnemy(
-            "exit_guard", "EXIT GUARD",
-            "exit", 480, 300,
-            28, 5, "#b36a77", 1
-        )
+        createEnemy("guard1", "CASTLE GUARD", "barracks", 250, 190, 24, 4, "#b36a77", 1),
+        createEnemy("guard2", "CASTLE GUARD", "armory", 450, 200, 28, 5, "#b36a77", 1),
+        createEnemy("dungeon_guard", "DUNGEON GUARD", "dungeon", 220, 180, 35, 6, "#9c637d", 2),
+        createEnemy("entrance_guard", "ENTRANCE GUARD", "entrance", 480, 190, 24, 4, "#b36a77", 1),
+        createEnemy("hall_guard", "HALL GUARD", "hall", 250, 270, 28, 5, "#b36a77", 1),
+        createEnemy("barracks_guard", "BARRACKS GUARD", "barracks", 480, 300, 28, 5, "#b36a77", 1),
+        createEnemy("library_guard", "LIBRARY GUARD", "library", 480, 300, 24, 4, "#9274ad", 1),
+        createEnemy("armory_guard", "ARMORY GUARD", "armory", 160, 280, 28, 5, "#b36a77", 1),
+        createEnemy("garden_guard", "GARDEN GUARD", "garden", 480, 190, 24, 4, "#719e68", 1),
+        createEnemy("royal_guard", "ROYAL GUARD", "royal", 500, 300, 32, 5, "#bd8b43", 2),
+        createEnemy("exit_guard", "EXIT GUARD", "exit", 480, 300, 28, 5, "#b36a77", 1)
     ];
 
-    hunter = createEnemy(
-        "hunter", "THE HUNTER",
-        "hall", 470, 190,
-        100, 4, "#c94c55", 3
-    );
-
+    hunter = createEnemy("hunter", "THE HUNTER", "hall", 470, 190, 100, 4, "#c94c55", 3);
     hunter.speed = 1.05;
     hunter.active = false;
 
-    king = createEnemy(
-        "king", "THE KING",
-        "royal", 320, 125,
-        170, 6, "#e3b34d", 4
-    );
-
+    king = createEnemy("king", "THE KING", "royal", 320, 125, 170, 6, "#e3b34d", 4);
     king.speed = 0;
 
-    // The sleepy guard is NOT active yet.
-    sleepyGuard = createEnemy(
-        "sleepy_guard", "AWAKENED GUARD",
-        "barracks", 320, 190,
-        32, 5, "#a3a3b9", 2
-    );
-
+    sleepyGuard = createEnemy("sleepy_guard", "AWAKENED GUARD", "barracks", 320, 190, 32, 5, "#a3a3b9", 2);
     sleepyGuard.active = false;
 }
 
@@ -939,7 +832,6 @@ function loadGame() {
 
         [...enemies, hunter, king, sleepyGuard].forEach(enemy => {
             if (!enemy) return;
-
             if (!enemy.homeRoom) enemy.homeRoom = enemy.room;
             if (enemy.alerted === undefined) enemy.alerted = false;
             if (enemy.lostTimer === undefined) enemy.lostTimer = 0;
@@ -964,10 +856,7 @@ function loadGame() {
 
 function updateContinueButton() {
     const btn = document.getElementById("continueBtn");
-
-    if (btn) {
-        btn.disabled = !localStorage.getItem("tarboozSave");
-    }
+    if (btn) btn.disabled = !localStorage.getItem("tarboozSave");
 }
 
 // =====================================================
@@ -1078,10 +967,8 @@ function showDeviceSelection(action) {
         overlay.innerHTML = `
             <h2>SELECT YOUR DEVICE</h2>
             <p>How are you playing?</p>
-
             <button id="pcModeBtn">PC / KEYBOARD</button>
             <button id="phoneModeBtn">PHONE / TOUCH</button>
-
             <button id="deviceBackBtn">BACK</button>
         `;
 
@@ -1102,11 +989,8 @@ function showDeviceSelection(action) {
             `;
         });
 
-        document.getElementById("pcModeBtn").onclick =
-            () => selectDevice("pc");
-
-        document.getElementById("phoneModeBtn").onclick =
-            () => selectDevice("phone");
+        document.getElementById("pcModeBtn").onclick = () => selectDevice("pc");
+        document.getElementById("phoneModeBtn").onclick = () => selectDevice("phone");
 
         document.getElementById("deviceBackBtn").onclick = () => {
             overlay.remove();
@@ -1196,8 +1080,7 @@ function createMobileControls() {
         ">
             <button id="mobileZ">Z</button>
             <button id="mobileX">X</button>
-            <button id="mobileC"
-                    style="grid-column:1 / 3; width:142px;">
+            <button id="mobileC" style="grid-column:1 / 3; width:142px;">
                 C
             </button>
         </div>
@@ -1235,23 +1118,23 @@ function createMobileControls() {
             if (dy > 12) direction = "arrowdown";
         }
 
-        // INVENTORY NAVIGATION
+        // INVENTORY: LEFT / RIGHT ONLY
         if (inventoryOpen) {
             if (
-                direction &&
+                (direction === "arrowleft" ||
+                 direction === "arrowright") &&
                 direction !== joystickMenuDirection
             ) {
-                if (
-                    direction === "arrowleft" ||
-                    direction === "arrowup"
-                ) {
-                    moveInventorySelection(-1);
-                } else {
-                    moveInventorySelection(1);
-                }
+                moveInventorySelection(
+                    direction === "arrowleft" ? -1 : 1
+                );
             }
 
-            joystickMenuDirection = direction;
+            joystickMenuDirection =
+                direction === "arrowleft" || direction === "arrowright"
+                    ? direction
+                    : "";
+
             return;
         }
 
@@ -1261,10 +1144,7 @@ function createMobileControls() {
             return;
         }
 
-        if (
-            direction &&
-            direction !== joystickMenuDirection
-        ) {
+        if (direction && direction !== joystickMenuDirection) {
             handleBattleInput(direction);
         }
 
@@ -1284,10 +1164,8 @@ function createMobileControls() {
 
     joystick.addEventListener("pointerdown", event => {
         event.preventDefault();
-
         joystickPointer = event.pointerId;
         joystick.setPointerCapture(event.pointerId);
-
         updateJoystick(event);
     });
 
@@ -1326,7 +1204,6 @@ function createMobileControls() {
 
     joystick.addEventListener("pointerup", event => {
         if (event.pointerId !== joystickPointer) return;
-
         joystickPointer = null;
         resetJoystick();
     });
@@ -1355,7 +1232,6 @@ function createMobileControls() {
 function removeMobileControls() {
     const controls = document.getElementById("mobileControls");
     if (controls) controls.remove();
-
     keys = {};
 }
 
@@ -1415,7 +1291,6 @@ function openMobilePause() {
 
     panel.innerHTML = `
         <h2>PAUSED</h2>
-
         <div style="
             background:#292334;
             border:2px solid #e5c16e;
@@ -1470,9 +1345,7 @@ function openMobilePause() {
         list.appendChild(line);
     });
 
-    document.getElementById("mobileResume").onclick =
-        closeMobilePause;
-
+    document.getElementById("mobileResume").onclick = closeMobilePause;
     document.getElementById("mobileSave").onclick = saveGame;
 
     document.getElementById("mobileMainMenu").onclick = () => {
@@ -1504,13 +1377,8 @@ function closeMobilePause() {
 // MENU BUTTONS
 // =====================================================
 
-document.getElementById("newGameBtn").onclick = () => {
-    showDeviceSelection("new");
-};
-
-document.getElementById("continueBtn").onclick = () => {
-    showDeviceSelection("continue");
-};
+document.getElementById("newGameBtn").onclick = () => showDeviceSelection("new");
+document.getElementById("continueBtn").onclick = () => showDeviceSelection("continue");
 
 document.getElementById("controlsBtn").onclick = () => {
     alert(
@@ -1518,7 +1386,9 @@ document.getElementById("controlsBtn").onclick = () => {
         "WASD / ARROWS = MOVE\n" +
         "E = INTERACT\n" +
         "I = INVENTORY\n" +
-        "ARROWS / JOYSTICK = SELECT ITEM\n" +
+        "LEFT / RIGHT = SELECT ITEM\n" +
+        "Z = USE / EQUIP SELECTED ITEM\n" +
+        "X = CLOSE INVENTORY\n" +
         "1 / 2 / 3 = EQUIP WEAPON\n" +
         "H = USE HEALING ITEM\n" +
         "ESC = PAUSE\n\n" +
@@ -1546,7 +1416,6 @@ document.getElementById("mainMenuBtn").onclick = () => {
     menuScreen.classList.remove("hidden");
 
     playMusic("menu");
-
     updateContinueButton();
 };
 
@@ -1572,9 +1441,7 @@ function closeDialogue() {
 
 function togglePause() {
     if (!gameRunning || dialogueOpen || battleOpen ||
-        gameOver || endingStarted) {
-        return;
-    }
+        gameOver || endingStarted) return;
 
     paused = !paused;
     pauseScreen.classList.toggle("hidden", !paused);
@@ -1670,11 +1537,9 @@ function startEnding() {
 }
 
 function drawEnding() {
-    // The screen stays completely black.
     ctx.fillStyle = "#000000";
     ctx.fillRect(0, 0, W, H);
 
-    // Wait one second before displaying the ending.
     if (Date.now() - endingStartTime >= 1000) {
         ctx.fillStyle = "white";
         ctx.font = "bold 42px monospace";
@@ -1707,12 +1572,9 @@ document.addEventListener("keydown", e => {
             closeDialogue();
         } else if (battleOpen) {
             handleBattleInput("enter");
-        } else if (
-            gameRunning &&
-            !paused &&
-            !inventoryOpen &&
-            !gameOver
-        ) {
+        } else if (inventoryOpen) {
+            useSelectedInventoryItem();
+        } else if (gameRunning && !paused && !gameOver) {
             interact();
         }
 
@@ -1756,7 +1618,6 @@ document.addEventListener("keydown", e => {
             menuScreen.classList.remove("hidden");
 
             playMusic("menu");
-
             updateContinueButton();
         }
 
@@ -1764,9 +1625,7 @@ document.addEventListener("keydown", e => {
     }
 
     if (dialogueOpen) {
-        if (key === "e" || key === "enter") {
-            closeDialogue();
-        }
+        if (key === "e" || key === "enter") closeDialogue();
         return;
     }
 
@@ -1813,11 +1672,11 @@ document.addEventListener("keydown", e => {
     }
 
     if (inventoryOpen) {
-        if (key === "arrowup" || key === "arrowleft") {
+        if (key === "arrowleft") {
             moveInventorySelection(-1);
         }
 
-        if (key === "arrowdown" || key === "arrowright") {
+        if (key === "arrowright") {
             moveInventorySelection(1);
         }
 
@@ -1992,10 +1851,7 @@ function changeRoom(door) {
 
     updateLocation();
 
-    showDialogue(
-        "NARRATOR",
-        "You entered " + getRoom().name + "."
-    );
+    showDialogue("NARRATOR", "You entered " + getRoom().name + ".");
 }
 
 // =====================================================
@@ -2035,7 +1891,6 @@ function wakeSleepyGuardIfReady() {
     sleepyGuard.alerted = false;
     sleepyGuard.fleeGrace = 0;
 
-    // Change the sleepy NPC's dialogue after waking.
     const sleepyNPC = npcs.barracks.find(
         npc => npc.name === "SLEEPY GUARD"
     );
@@ -2056,7 +1911,6 @@ function wakeSleepyGuardIfReady() {
 // =====================================================
 
 function interact() {
-    // The exterior exit is locked until the treasure is owned.
     if (
         currentRoom === "exit" &&
         distance(player, exitDoorPosition) < 65
@@ -2073,15 +1927,12 @@ function interact() {
         return;
     }
 
-    // Once the sleepy guard wakes, he is no longer an NPC.
     for (const npc of npcs[currentRoom] || []) {
         if (
             npc.name === "SLEEPY GUARD" &&
             sleepyGuard &&
             sleepyGuard.active
-        ) {
-            continue;
-        }
+        ) continue;
 
         if (distance(player, npc) < 55) {
             const line = npc.lines[npc.line % npc.lines.length];
@@ -2133,20 +1984,11 @@ function interact() {
         distance(player, king) < 65
     ) {
         if (enemies.some(enemy => enemy.active)) {
-            showDialogue(
-                "NARRATOR",
-                "The castle guards still stand. Defeat every hostile guard first!"
-            );
+            showDialogue("NARRATOR", "The castle guards still stand. Defeat every hostile guard first!");
         } else if (hunter && hunter.active) {
-            showDialogue(
-                "NARRATOR",
-                "The Hunter still guards the castle. Defeat the Hunter first!"
-            );
+            showDialogue("NARRATOR", "The Hunter still guards the castle. Defeat the Hunter first!");
         } else if (sleepyGuard && sleepyGuard.active) {
-            showDialogue(
-                "NARRATOR",
-                "The awakened guard is still standing. Defeat him first!"
-            );
+            showDialogue("NARRATOR", "The awakened guard is still standing. Defeat him first!");
         } else {
             startBattle(king);
         }
@@ -2208,11 +2050,7 @@ function findRoomRoute(start, destination) {
         for (const door of rooms[room].doors) {
             if (!visited.has(door.target)) {
                 visited.add(door.target);
-
-                queue.push([
-                    door.target,
-                    [...path, { from: room, door }]
-                ]);
+                queue.push([door.target, [...path, { from: room, door }]]);
             }
         }
     }
@@ -2244,8 +2082,7 @@ function unlockHunterIfReady() {
     hunter.alerted = true;
     hunter.lostTimer = 0;
     hunter.fleeGrace = 0;
-   }
-
+}
 
 // =====================================================
 // ENEMY DETECTION
@@ -2253,10 +2090,7 @@ function unlockHunterIfReady() {
 
 function detectPlayer(enemy) {
     if (!enemy.active || enemy.id === "king") return;
-
-    if (enemy.room === currentRoom) {
-        enemy.alerted = true;
-    }
+    if (enemy.room === currentRoom) enemy.alerted = true;
 }
 
 function updateOneEnemy(enemy) {
@@ -2286,11 +2120,7 @@ function updateOneEnemy(enemy) {
             currentRoom = oldRoom;
         }
 
-        if (
-            dist < 28 &&
-            enemy.fleeGrace <= 0 &&
-            !battleOpen
-        ) {
+        if (dist < 28 && enemy.fleeGrace <= 0 && !battleOpen) {
             startBattle(enemy);
         }
 
@@ -2298,17 +2128,14 @@ function updateOneEnemy(enemy) {
     }
 
     const route = findRoomRoute(enemy.room, currentRoom);
-
     if (!route || !route.length) return;
 
     const door = route[0].door;
-
     const targetX = door.x * TILE + 16;
     const targetY = door.y * TILE + 16;
 
     const dx = targetX - enemy.x;
     const dy = targetY - enemy.y;
-
     const dist = Math.hypot(dx, dy);
 
     if (dist > 5) {
@@ -2346,36 +2173,24 @@ let battle = {
     menu: "main",
     selected: 0,
     message: "",
-
     aimX: 0,
     aimDirection: 1,
     aimSpeed: 5,
-
     bullets: [],
     bulletTimer: 0,
     bulletDuration: 240,
-
     heart: {
         x: W / 2,
         y: 250,
         size: 12
     },
-
     arena: {
         x: 190,
         y: 175,
         w: 260,
         h: 150
     },
-
-    actOptions: [
-        "TALK",
-        "JOKE",
-        "CHEER",
-        "THREATEN",
-        "CHECK"
-    ],
-
+    actOptions: ["TALK", "JOKE", "CHEER", "THREATEN", "CHECK"],
     actScore: 0,
     itemOptions: [],
     bulletPattern: 0,
@@ -2387,7 +2202,6 @@ function startBattle(enemy) {
 
     battleOpen = true;
     keys = {};
-
     battle.enemy = enemy;
 
     if (enemy.id === "king") {
@@ -2402,7 +2216,6 @@ function startBattle(enemy) {
     battle.menu = "main";
     battle.selected = 0;
     battle.message = enemy.name + " blocks your way!";
-
     battle.actScore = enemy.actScore || 0;
     battle.turnCount = 0;
     battle.bullets = [];
@@ -2439,18 +2252,14 @@ function handleBattleInput(key) {
     const columns = Math.min(2, options.length);
 
     if (key === "arrowleft" || key === "a") {
-        if (battle.selected % columns > 0) {
-            battle.selected--;
-        }
+        if (battle.selected % columns > 0) battle.selected--;
     }
 
     if (key === "arrowright" || key === "d") {
         if (
             battle.selected % columns < columns - 1 &&
             battle.selected + 1 < options.length
-        ) {
-            battle.selected++;
-        }
+        ) battle.selected++;
     }
 
     if (key === "arrowup" || key === "w") {
@@ -2458,10 +2267,7 @@ function handleBattleInput(key) {
     }
 
     if (key === "arrowdown" || key === "s") {
-        battle.selected = Math.min(
-            options.length - 1,
-            battle.selected + columns
-        );
+        battle.selected = Math.min(options.length - 1, battle.selected + columns);
     }
 
     if (key === "escape") {
@@ -2472,9 +2278,7 @@ function handleBattleInput(key) {
         return;
     }
 
-    if (key === "enter" || key === "e") {
-        selectBattleOption();
-    }
+    if (key === "enter" || key === "e") selectBattleOption();
 }
 
 function getCurrentOptions() {
@@ -2482,7 +2286,6 @@ function getCurrentOptions() {
     if (battle.menu === "act") return battle.actOptions;
     if (battle.menu === "item") return battle.itemOptions;
     if (battle.menu === "mercy") return ["FLEE", "SPARE"];
-
     return mainOptions;
 }
 
@@ -2502,11 +2305,9 @@ function selectBattleOption() {
 
         if (selected === "ITEM") {
             battle.menu = "item";
-
             battle.itemOptions = inventory.map(i =>
                 itemInfo[i.id]?.name || i.id
             );
-
             battle.itemOptions.push("BACK");
             battle.selected = 0;
         }
@@ -2568,25 +2369,21 @@ function performAct(action) {
             king: "The King ignores your words.",
             default: "The enemy listens for a moment."
         },
-
         JOKE: {
             hunter: "The Hunter does not find it funny.",
             king: "The King looks unimpressed.",
             default: "The enemy tries not to laugh."
         },
-
         CHEER: {
             hunter: "The Hunter becomes more determined.",
             king: "The King raises an eyebrow.",
             default: "The enemy seems encouraged."
         },
-
         THREATEN: {
             hunter: "The Hunter steps forward.",
             king: "The King is not intimidated.",
             default: "The enemy looks uncertain."
         },
-
         CHECK: {
             hunter: "A relentless guardian. It will not give up.",
             king: "The ruler of this castle. Extremely powerful.",
@@ -2617,7 +2414,6 @@ function performAct(action) {
     }
 
     enemy.actScore = battle.actScore;
-
     battle.message = response;
     battle.phase = "message";
 }
@@ -2671,20 +2467,12 @@ function updateAim() {
 
 function resolveAttack() {
     const weapon = itemInfo[equippedWeapon] || { power: 3 };
-
     const distanceFromCentre = Math.abs(battle.aimX - 130);
 
-    const accuracy = Math.max(
-        0,
-        1 - distanceFromCentre / 130
-    );
-
+    const accuracy = Math.max(0, 1 - distanceFromCentre / 130);
     const multiplier = 0.5 + accuracy * 1.5;
 
-    const damage = Math.max(
-        1,
-        Math.round(weapon.power * multiplier)
-    );
+    const damage = Math.max(1, Math.round(weapon.power * multiplier));
 
     battle.enemy.hp = Math.max(0, battle.enemy.hp - damage);
 
@@ -2770,9 +2558,7 @@ function finishPlayerTurn() {
 // =====================================================
 
 function spawnBullet(x, y, vx, vy, radius = 6) {
-    battle.bullets.push({
-        x, y, vx, vy, radius
-    });
+    battle.bullets.push({ x, y, vx, vy, radius });
 }
 
 function firePattern() {
@@ -2786,27 +2572,16 @@ function firePattern() {
     const speed = 0.7 + difficulty * 0.13;
 
     if (pattern === 0) {
-        const startX =
-            arena.x + 20 + Math.random() * (arena.w - 40);
-
+        const startX = arena.x + 20 + Math.random() * (arena.w - 40);
         const startY = arena.y + 3;
 
         const dx = battle.heart.x - startX;
         const dy = battle.heart.y - startY;
         const length = Math.hypot(dx, dy) || 1;
 
-        spawnBullet(
-            startX,
-            startY,
-            dx / length * speed,
-            dy / length * speed
-        );
-    }
-
-    else if (pattern === 1) {
-        const y = arena.y + 20 +
-            Math.random() * (arena.h - 40);
-
+        spawnBullet(startX, startY, dx / length * speed, dy / length * speed);
+    } else if (pattern === 1) {
+        const y = arena.y + 20 + Math.random() * (arena.h - 40);
         const count = 1 + difficulty;
 
         for (let i = 0; i < count; i++) {
@@ -2817,26 +2592,19 @@ function firePattern() {
                 0
             );
         }
-    }
-
-    else if (pattern === 2) {
+    } else if (pattern === 2) {
         const count = 1 + difficulty;
 
         for (let i = 0; i < count; i++) {
             spawnBullet(
-                arena.x + 15 +
-                    Math.random() * (arena.w - 30),
+                arena.x + 15 + Math.random() * (arena.w - 30),
                 arena.y + 3,
                 (Math.random() - 0.5) * 0.35,
                 speed
             );
         }
-    }
-
-    else {
-        const y = arena.y + 20 +
-            Math.random() * (arena.h - 40);
-
+    } else {
+        const y = arena.y + 20 + Math.random() * (arena.h - 40);
         const count = 1 + difficulty;
 
         for (let i = 0; i < count; i++) {
@@ -2886,10 +2654,7 @@ function updateDodge() {
     const difficulty = Math.max(1, battle.enemy.difficulty || 1);
     const interval = Math.max(24, 42 - difficulty * 4);
 
-    if (
-        battle.bulletTimer === 1 ||
-        battle.bulletTimer % interval === 0
-    ) {
+    if (battle.bulletTimer === 1 || battle.bulletTimer % interval === 0) {
         firePattern();
     }
 
@@ -2904,8 +2669,7 @@ function updateDodge() {
 
         if (distance < bullet.radius + heart.size / 2) {
             const hitDamage =
-                (battle.enemy.id === "hunter" ||
-                 battle.enemy.id === "king")
+                (battle.enemy.id === "hunter" || battle.enemy.id === "king")
                     ? 1
                     : 2;
 
@@ -2955,47 +2719,27 @@ function finishBattle(victory, spared = false) {
                 "NARRATOR",
                 "The Hunter has been defeated! Somewhere in the barracks, a sleepy guard has awakened..."
             );
-        }
-
-        else if (enemy.id === "king") {
+        } else if (enemy.id === "king") {
             if (victory) {
-                if (!hasItem("kings_key")) {
-                    addItem("kings_key");
-                }
-
-                if (!hasItem("royal_treasure")) {
-                    addItem("royal_treasure");
-                }
+                if (!hasItem("kings_key")) addItem("kings_key");
+                if (!hasItem("royal_treasure")) addItem("royal_treasure");
             }
 
             showDialogue(
                 "NARRATOR",
                 "You defeated the King and recovered the stolen treasure! The King's Key is now yours. The castle exit is unlocked!"
             );
-        }
-
-        else if (enemy.id === "sleepy_guard") {
+        } else if (enemy.id === "sleepy_guard") {
             showDialogue(
                 "NARRATOR",
                 "The awakened guard has been defeated. The way to the King is clear!"
             );
+        } else {
+            showDialogue("NARRATOR", "The enemy is no longer a threat.");
         }
-
-        else {
-            showDialogue(
-                "NARRATOR",
-                "The enemy is no longer a threat."
-            );
-        }
-    }
-
-    else {
+    } else {
         enemy.fleeGrace = 100;
-
-        showDialogue(
-            "NARRATOR",
-            "You escaped. The enemy is still nearby!"
-        );
+        showDialogue("NARRATOR", "You escaped. The enemy is still nearby!");
     }
 
     battleOpen = false;
@@ -3015,7 +2759,6 @@ function finishBattle(victory, spared = false) {
 
 function updateBattle() {
     if (!battleOpen) return;
-
     if (battle.phase === "aim") updateAim();
     if (battle.phase === "dodge") updateDodge();
 }
@@ -3062,15 +2805,8 @@ function updateCamera() {
     const mapWidth = getMap()[0].length * TILE;
     const mapHeight = getMap().length * TILE;
 
-    camera.x = Math.max(
-        0,
-        Math.min(player.x - W / 2, mapWidth - W)
-    );
-
-    camera.y = Math.max(
-        0,
-        Math.min(player.y - H / 2, mapHeight - H)
-    );
+    camera.x = Math.max(0, Math.min(player.x - W / 2, mapWidth - W));
+    camera.y = Math.max(0, Math.min(player.y - H / 2, mapHeight - H));
 }
 
 // =====================================================
@@ -3096,10 +2832,7 @@ function drawMap() {
                 ctx.fillRect(x, y, TILE, TILE);
 
                 ctx.fillStyle = "#5b4b62";
-                ctx.fillRect(
-                    x + 2, y + 2,
-                    TILE - 4, TILE - 4
-                );
+                ctx.fillRect(x + 2, y + 2, TILE - 4, TILE - 4);
             }
         }
     }
@@ -3115,11 +2848,9 @@ function drawMap() {
         ctx.fillRect(x + 21, y + 16, 3, 3);
     }
 
-    // Draw the exterior exit door.
     if (currentRoom === "exit") {
         const x = exitDoorPosition.x - camera.x;
         const y = exitDoorPosition.y - camera.y;
-
         const unlocked = hasItem("royal_treasure");
 
         ctx.fillStyle = unlocked ? "#b17a3c" : "#633c35";
@@ -3131,11 +2862,7 @@ function drawMap() {
         ctx.fillStyle = unlocked ? "#ffe7a3" : "#e75b68";
         ctx.font = "9px monospace";
         ctx.textAlign = "center";
-        ctx.fillText(
-            unlocked ? "EXIT" : "LOCKED",
-            x,
-            y - 23
-        );
+        ctx.fillText(unlocked ? "EXIT" : "LOCKED", x, y - 23);
         ctx.textAlign = "left";
     }
 }
@@ -3169,10 +2896,7 @@ function drawFurniture() {
             ctx.fillStyle = "#66402d";
             ctx.fillRect(x + 2, y + 1, 28, 30);
 
-            const colors = [
-                "#c44d4d", "#5686ba",
-                "#d5b75b", "#7aaf78"
-            ];
+            const colors = ["#c44d4d", "#5686ba", "#d5b75b", "#7aaf78"];
 
             colors.forEach((color, i) => {
                 ctx.fillStyle = color;
@@ -3207,9 +2931,7 @@ function drawChests() {
         const x = chest.x * TILE - camera.x;
         const y = chest.y * TILE - camera.y;
 
-        const opened = openedChests.includes(
-            currentRoom + "_" + index
-        );
+        const opened = openedChests.includes(currentRoom + "_" + index);
 
         ctx.fillStyle = opened ? "#59402d" : "#9b5c2d";
         ctx.fillRect(x + 4, y + 10, 24, 17);
@@ -3258,9 +2980,7 @@ function drawNPCs() {
             npc.name === "SLEEPY GUARD" &&
             sleepyGuard &&
             sleepyGuard.active
-        ) {
-            return;
-        }
+        ) return;
 
         drawCharacter(npc.x, npc.y, npc.color, npc.name);
     });
@@ -3272,11 +2992,7 @@ function drawRoyalTreasureChest() {
     const x = 320 - camera.x;
     const y = 66 - camera.y;
 
-    const glow = ctx.createRadialGradient(
-        x, y + 13, 8,
-        x, y + 13, 82
-    );
-
+    const glow = ctx.createRadialGradient(x, y + 13, 8, x, y + 13, 82);
     glow.addColorStop(0, "rgba(255, 205, 75, 0.34)");
     glow.addColorStop(1, "rgba(255, 174, 40, 0)");
 
@@ -3337,46 +3053,24 @@ function drawRoyalTreasureChest() {
 }
 
 function drawEnemies() {
-    if (currentRoom === "royal") {
-        drawRoyalTreasureChest();
-    }
+    if (currentRoom === "royal") drawRoyalTreasureChest();
 
     enemies.forEach(enemy => {
         if (enemy.active && enemy.room === currentRoom) {
-            drawCharacter(
-                enemy.x,
-                enemy.y,
-                enemy.color,
-                enemy.name
-            );
+            drawCharacter(enemy.x, enemy.y, enemy.color, enemy.name);
         }
     });
 
     if (hunter.active && hunter.room === currentRoom) {
-        drawCharacter(
-            hunter.x,
-            hunter.y,
-            hunter.color,
-            hunter.name
-        );
+        drawCharacter(hunter.x, hunter.y, hunter.color, hunter.name);
     }
 
     if (sleepyGuard.active && sleepyGuard.room === currentRoom) {
-        drawCharacter(
-            sleepyGuard.x,
-            sleepyGuard.y,
-            sleepyGuard.color,
-            sleepyGuard.name
-        );
+        drawCharacter(sleepyGuard.x, sleepyGuard.y, sleepyGuard.color, sleepyGuard.name);
     }
 
     if (king.active && king.room === currentRoom) {
-        drawCharacter(
-            king.x,
-            king.y,
-            king.color,
-            king.name
-        );
+        drawCharacter(king.x, king.y, king.color, king.name);
     }
 }
 
@@ -3410,11 +3104,9 @@ const miniMapLayout = {
     barracks: { x: 0, y: 0, label: "BARR" },
     library: { x: 1, y: 0, label: "LIB" },
     garden: { x: 2, y: 0, label: "GARD" },
-
     entrance: { x: 0, y: 1, label: "ENT" },
     hall: { x: 1, y: 1, label: "HALL" },
     royal: { x: 2, y: 1, label: "ROY" },
-
     armory: { x: 0, y: 2, label: "ARM" },
     dungeon: { x: 1, y: 2, label: "DUNG" },
     exit: { x: 2, y: 2, label: "EXIT" }
@@ -3466,10 +3158,7 @@ function drawMiniMap() {
     ctx.lineWidth = 2;
 
     miniMapLinks.forEach(([a, b]) => {
-        if (
-            !exploredRooms.includes(a) &&
-            !exploredRooms.includes(b)
-        ) return;
+        if (!exploredRooms.includes(a) && !exploredRooms.includes(b)) return;
 
         const p1 = getNodePosition(a);
         const p2 = getNodePosition(b);
@@ -3531,8 +3220,7 @@ function drawInventory() {
     ctx.font = "13px monospace";
 
     ctx.fillText(
-        "EQUIPPED: " +
-        (itemInfo[equippedWeapon]?.name || "None"),
+        "EQUIPPED: " + (itemInfo[equippedWeapon]?.name || "None"),
         80, 110
     );
 
@@ -3542,12 +3230,7 @@ function drawInventory() {
 
         if (selected) {
             ctx.fillStyle = "#51445a";
-            ctx.fillRect(
-                75,
-                130 + i * 22,
-                470,
-                20
-            );
+            ctx.fillRect(75, 130 + i * 22, 470, 20);
         }
 
         ctx.fillStyle = selected
@@ -3567,10 +3250,9 @@ function drawInventory() {
 
     ctx.fillStyle = "#aaa";
     ctx.font = "11px monospace";
-
-    ctx.fillText("ARROWS / JOYSTICK = SELECT ITEM", 80, 326);
-    ctx.fillText("1 / 2 / 3 = QUICK EQUIP WEAPON", 80, 341);
-    ctx.fillText("I / ESC / X = CLOSE", 80, 356);
+    ctx.fillText("LEFT / RIGHT / JOYSTICK = SELECT ITEM", 80, 326);
+    ctx.fillText("Z = USE / EQUIP SELECTED ITEM", 80, 341);
+    ctx.fillText("X / I / ESC = CLOSE", 80, 356);
 }
 
 // =====================================================
@@ -3597,34 +3279,18 @@ function drawBattle() {
     ctx.fillRect(65, 75, 250, 12);
 
     ctx.fillStyle = "#e45b65";
-    ctx.fillRect(
-        65, 75,
-        250 * (enemy.hp / enemy.maxHp),
-        12
-    );
+    ctx.fillRect(65, 75, 250 * (enemy.hp / enemy.maxHp), 12);
 
     ctx.font = "12px monospace";
     ctx.fillStyle = "white";
-
-    ctx.fillText(
-        "HP " + enemy.hp + " / " + enemy.maxHp,
-        330, 86
-    );
-
-    ctx.fillText(
-        "PLAYER HP: " + player.hp + " / " + player.maxHp,
-        65, 115
-    );
+    ctx.fillText("HP " + enemy.hp + " / " + enemy.maxHp, 330, 86);
+    ctx.fillText("PLAYER HP: " + player.hp + " / " + player.maxHp, 65, 115);
 
     ctx.fillStyle = "#542d35";
     ctx.fillRect(65, 125, 250, 10);
 
     ctx.fillStyle = "#62bd79";
-    ctx.fillRect(
-        65, 125,
-        250 * (player.hp / player.maxHp),
-        10
-    );
+    ctx.fillRect(65, 125, 250 * (player.hp / player.maxHp), 10);
 
     if (battle.phase === "menu") drawBattleMenu();
     if (battle.phase === "aim") drawAimBar();
@@ -3653,10 +3319,8 @@ function drawBattleMenu() {
     ctx.fillText(battle.message, 65, 185);
 
     const columns = Math.min(2, Math.max(1, options.length));
-
     const startX = 70;
     const startY = 220;
-
     const buttonWidth = 230;
     const buttonHeight = 30;
     const columnGap = 250;
@@ -3669,15 +3333,11 @@ function drawBattleMenu() {
         const x = startX + col * columnGap;
         const y = startY + row * rowGap;
 
-        ctx.strokeStyle =
-            battle.selected === i ? "#ffcf77" : "#aaa";
-
+        ctx.strokeStyle = battle.selected === i ? "#ffcf77" : "#aaa";
         ctx.lineWidth = 2;
         ctx.strokeRect(x, y, buttonWidth, buttonHeight);
 
-        ctx.fillStyle =
-            battle.selected === i ? "#ffcf77" : "white";
-
+        ctx.fillStyle = battle.selected === i ? "#ffcf77" : "white";
         ctx.fillText(option, x + 12, y + 20);
     });
 
@@ -3693,11 +3353,7 @@ function drawBattleMenu() {
 function drawAimBar() {
     ctx.fillStyle = "white";
     ctx.font = "13px monospace";
-
-    ctx.fillText(
-        "STOP THE MARKER NEAR THE CENTRE!",
-        130, 205
-    );
+    ctx.fillText("STOP THE MARKER NEAR THE CENTRE!", 130, 205);
 
     const x = 190;
     const y = 250;
@@ -3713,11 +3369,7 @@ function drawAimBar() {
     ctx.fillRect(x + 105, y, 50, 22);
 
     ctx.fillStyle = "white";
-    ctx.fillRect(
-        x + battle.aimX - 2,
-        y - 8,
-        4, 38
-    );
+    ctx.fillRect(x + battle.aimX - 2, y - 8, 4, 38);
 
     ctx.fillStyle = "#aaa";
     ctx.font = "11px monospace";
@@ -3732,25 +3384,13 @@ function drawDodgeArena() {
     const arena = battle.arena;
 
     ctx.fillStyle = "#201a2c";
-    ctx.fillRect(
-        arena.x,
-        arena.y,
-        arena.w,
-        arena.h
-    );
+    ctx.fillRect(arena.x, arena.y, arena.w, arena.h);
 
     ctx.strokeStyle = "white";
     ctx.lineWidth = 3;
-
-    ctx.strokeRect(
-        arena.x,
-        arena.y,
-        arena.w,
-        arena.h
-    );
+    ctx.strokeRect(arena.x, arena.y, arena.w, arena.h);
 
     ctx.fillStyle = "#ff5268";
-
     ctx.beginPath();
     ctx.arc(
         battle.heart.x,
@@ -3765,13 +3405,7 @@ function drawDodgeArena() {
 
     battle.bullets.forEach(bullet => {
         ctx.beginPath();
-        ctx.arc(
-            bullet.x,
-            bullet.y,
-            bullet.radius,
-            0,
-            Math.PI * 2
-        );
+        ctx.arc(bullet.x, bullet.y, bullet.radius, 0, Math.PI * 2);
         ctx.fill();
     });
 
@@ -3797,7 +3431,6 @@ function gameLoop() {
         return;
     }
 
-    // ENDING SCREEN OVERRIDES EVERYTHING.
     if (endingStarted) {
         ctx.clearRect(0, 0, W, H);
         drawEnding();
@@ -3815,7 +3448,6 @@ function gameLoop() {
     }
 
     updateCamera();
-
     ctx.clearRect(0, 0, W, H);
 
     if (!battleOpen) {
