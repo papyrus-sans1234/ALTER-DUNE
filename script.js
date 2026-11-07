@@ -61,45 +61,56 @@ Object.values(musicTracks).forEach(track => {
     track.volume = 0;
 });
 
+
 function playMusic(name) {
     const nextMusic = musicTracks[name];
 
-    if (!nextMusic) return;
+    if (!nextMusic) {
+        console.error("Unknown music track:", name);
+        return;
+    }
+
     if (currentMusic === nextMusic && !nextMusic.paused) return;
 
     clearInterval(musicFadeTimer);
 
     const oldMusic = currentMusic;
+
     nextMusic.volume = 0;
 
-    nextMusic.play().then(() => {
-        currentMusic = nextMusic;
+    nextMusic.play()
+        .then(() => {
+            currentMusic = nextMusic;
 
-        let volume = 0;
+            let volume = 0;
 
-        musicFadeTimer = setInterval(() => {
-            volume = Math.min(0.35, volume + 0.05);
+            musicFadeTimer = setInterval(() => {
+                volume = Math.min(0.35, volume + 0.05);
 
-            if (oldMusic && oldMusic !== nextMusic) {
-                oldMusic.volume = Math.max(0, oldMusic.volume - 0.05);
+                nextMusic.volume = volume;
 
-                if (oldMusic.volume <= 0) {
-                    oldMusic.pause();
-                    oldMusic.currentTime = 0;
+                if (oldMusic && oldMusic !== nextMusic) {
+                    oldMusic.volume = Math.max(
+                        0,
+                        oldMusic.volume - 0.05
+                    );
+
+                    if (oldMusic.volume <= 0) {
+                        oldMusic.pause();
+                        oldMusic.currentTime = 0;
+                    }
                 }
-            }
 
-            nextMusic.volume = volume;
-
-            if (volume >= 0.35) {
-                clearInterval(musicFadeTimer);
-            }
-        }, 100);
-
-    }).catch(error => {
-        console.log("Music playback needs user interaction:", error);
-    });
+                if (volume >= 0.35) {
+                    clearInterval(musicFadeTimer);
+                }
+            }, 100);
+        })
+        .catch(error => {
+            console.error("Music error:", error);
+        });
 }
+
 
 function stopMusic() {
     clearInterval(musicFadeTimer);
@@ -113,17 +124,14 @@ function stopMusic() {
     currentMusic = null;
 }
 
-let musicUnlocked = false;
-
 document.addEventListener("pointerdown", () => {
     if (!musicUnlocked) {
         musicUnlocked = true;
-
-        if (!currentMusic) {
-            playMusic("menu");
-        }
+        playMusic("menu");
     }
-}, { once: true });
+});
+
+        
 
 // =====================================================
 // ROOMS
@@ -3486,5 +3494,3 @@ ctx.imageSmoothingEnabled = false;
 resetEnemies();
 updateContinueButton();
 updateLocation();
-
-playMusic("menu");
