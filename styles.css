@@ -373,3 +373,202 @@ footer {
         margin-top: 5px;
     }
 }
+
+
+/* =====================================================
+   ALTER DUNE - MOBILE LANDSCAPE FIT
+   ===================================================== */
+
+@media (max-width: 900px) and (orientation: landscape) {
+
+    html,
+    body {
+        width: 100%;
+        height: 100%;
+        min-height: 100%;
+        overflow: hidden;
+    }
+
+    body {
+        min-height: 100dvh;
+        height: 100dvh;
+    }
+
+    .topbar,
+    footer {
+        display: none;
+    }
+
+    .screen {
+        width: 100%;
+        height: 100%;
+        min-height: 0;
+        padding: 5px;
+    }
+
+    /* MAIN MENU */
+
+    #menuScreen {
+        overflow: auto;
+    }
+
+    .menu-content {
+        width: min(560px, 94vw);
+        max-height: 96%;
+        overflow: auto;
+        padding: clamp(10px, 3vh, 22px);
+    }
+
+    .menu-content h1 {
+        font-size: clamp(25px, 7vh, 44px);
+        line-height: 1.2;
+        margin-bottom: 8px;
+    }
+
+    .tagline {
+        font-size: clamp(6px, 1.7vh, 9px);
+        margin-bottom: 10px;
+    }
+
+    .menu-content button {
+        width: min(230px, 90%);
+        padding: clamp(8px, 2vh, 12px);
+        margin: 6px auto;
+        font-size: clamp(7px, 1.8vh, 9px);
+    }
+
+    #menuMessage {
+        margin-top: 8px;
+    }
+
+    /* GAME SCREEN */
+
+    #gameScreen {
+        display: flex;
+        flex-direction: column;
+        justify-content: stretch;
+        align-items: center;
+        gap: 4px;
+        width: 100%;
+        height: 100%;
+        min-height: 0;
+        padding: 4px;
+    }
+
+    .game-header,
+    .status-bar {
+        flex: 0 0 auto;
+        width: 100%;
+        max-width: none;
+        min-height: 18px;
+        font-size: clamp(6px, 1.7vh, 9px);
+        line-height: 1.2;
+    }
+
+    #pauseBtn {
+        padding: 5px 8px;
+        font-size: clamp(6px, 1.5vh, 8px);
+    }
+
+    /* SINGLE BORDERED GAME BOX */
+
+    .game-container {
+        flex: 0 1 auto;
+        min-width: 0;
+        min-height: 0;
+        width: min(100%, calc((100dvh - 58px) * 1.6));
+        height: auto;
+        aspect-ratio: 8 / 5;
+        max-width: none;
+        max-height: none;
+        border-width: 3px;
+        outline-width: 1px;
+        display: flex;
+        align-items: stretch;
+        justify-content: stretch;
+        overflow: hidden;
+    }
+
+    .game-container canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+        max-width: none;
+        max-height: none;
+        object-fit: fill;
+    }
+
+    /* DIALOGUE */
+
+    .dialogue-box {
+        left: 6px;
+        right: 6px;
+        bottom: 6px;
+        min-height: 0;
+        padding: clamp(6px, 1.8vh, 10px);
+        border-width: 2px;
+    }
+
+    #speaker {
+        font-size: clamp(7px, 1.8vh, 10px);
+    }
+
+    .dialogue-box p {
+        font-size: clamp(7px, 1.8vh, 10px);
+        line-height: 1.6;
+        margin-top: 5px;
+        min-height: 0;
+    }
+
+    .dialogue-box small {
+        font-size: clamp(6px, 1.4vh, 7px);
+        margin-top: 3px;
+    }
+
+    /* PAUSE MENU */
+
+    .overlay {
+        gap: 8px;
+        padding: 8px;
+    }
+
+    .overlay h2 {
+        font-size: clamp(15px, 4vh, 25px);
+        margin-bottom: 4px;
+    }
+
+    .overlay button {
+        padding: 8px;
+        font-size: clamp(7px, 1.7vh, 10px);
+    }
+}
+
+/* EXTRA-SHORT LANDSCAPE SCREENS */
+
+@media (max-width: 900px) and
+       (orientation: landscape) and
+       (max-height: 360px) {
+
+    #gameScreen {
+        gap: 2px;
+        padding: 2px;
+    }
+
+    .game-header,
+    .status-bar {
+        min-height: 14px;
+    }
+
+    .game-container {
+        border-width: 2px;
+    }
+
+    .dialogue-box {
+        padding: 5px;
+    }
+
+    .dialogue-box p {
+        font-size: 7px;
+        line-height: 1.35;
+    }
+}
