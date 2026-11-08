@@ -1,6 +1,7 @@
 // =====================================================
 // ALTER DUNE - DEMO 0.9
 // THE HUNT BEGINS
+// PART 1 OF 2
 // =====================================================
 
 const canvas = document.getElementById("gameCanvas");
@@ -27,6 +28,11 @@ let loopStarted = false;
 
 let endingStarted = false;
 let endingStartTime = 0;
+let endingType = "neutral";
+let endingPage = 0;
+let endingFade = 0;
+let prisonerRescued = false;
+let royalEndingComplete = false;
 
 let keys = {};
 let currentRoom = "entrance";
@@ -614,7 +620,9 @@ const npcs = {
                 "HEY! YOU'RE AN INTRUDER!",
                 "WAIT, THAT'S ACTUALLY AWESOME!",
                 "I've never seen someone sneak in here!",
-                "The Hunter is REALLY strong, though."
+                "The Hunter is REALLY strong, though.",
+                "If the King falls, maybe both kingdoms can finally talk.",
+                "People deserve a choice about where they call home."
             ],
             line: 0
         },
@@ -626,7 +634,9 @@ const npcs = {
             lines: [
                 "I once guarded this castle.",
                 "The King was not always like this.",
-                "Something changed him."
+                "Something changed him.",
+                "If someone ever freed the prisoners, this kingdom could heal.",
+                "A ruler should bring people together, not keep them apart."
             ],
             line: 0
         }
@@ -789,7 +799,9 @@ function saveGame() {
         hunter,
         king,
         sleepyGuard,
-        exploredRooms
+        exploredRooms,
+        prisonerRescued,
+        royalEndingComplete
     };
 
     localStorage.setItem("tarboozSave", JSON.stringify(data));
@@ -830,6 +842,9 @@ function loadGame() {
             ? data.exploredRooms
             : [currentRoom];
 
+        prisonerRescued = Boolean(data.prisonerRescued);
+        royalEndingComplete = Boolean(data.royalEndingComplete);
+
         if (!exploredRooms.includes(currentRoom)) {
             exploredRooms.push(currentRoom);
         }
@@ -845,7 +860,6 @@ function loadGame() {
                 enemy.defeated = enemy.hp <= 0;
             }
 
-            // An enemy with zero HP can never become active again.
             if (enemy.hp <= 0 || enemy.defeated) {
                 enemy.hp = Math.max(0, enemy.hp);
                 enemy.defeated = true;
@@ -899,6 +913,11 @@ function startNewGame() {
 
     endingStarted = false;
     endingStartTime = 0;
+    endingType = "neutral";
+    endingPage = 0;
+    endingFade = 0;
+    prisonerRescued = false;
+    royalEndingComplete = false;
 
     checkpoint = {
         room: "entrance",
@@ -1424,6 +1443,8 @@ document.getElementById("mainMenuBtn").onclick = () => {
     gameOver = false;
     dialogueOpen = false;
     endingStarted = false;
+    endingType = "neutral";
+    endingPage = 0;
 
     pauseScreen.classList.add("hidden");
     dialogueBox.classList.add("hidden");
@@ -1527,14 +1548,17 @@ function drawGameOver() {
 }
 
 // =====================================================
-// ENDING
+// ENDING SYSTEM
 // =====================================================
 
-function startEnding() {
+function startEnding(type = "neutral") {
     if (endingStarted) return;
 
     endingStarted = true;
+    endingType = type;
+    endingPage = 0;
     endingStartTime = Date.now();
+    endingFade = 1;
 
     gameRunning = true;
     paused = false;
@@ -1551,21 +1575,160 @@ function startEnding() {
     stopMusic();
 }
 
+const endingScenes = {
+    neutral: [
+        {
+            title: "THE TREASURE IS YOURS",
+            lines: [
+                "With the King's defeat, the castle gates finally open.",
+                "You take the royal treasure and walk away.",
+                "The kingdom is left to find its own future."
+            ]
+        },
+        {
+            title: "THE END",
+            lines: [
+                "You escaped with the treasure.",
+                "Your adventure ends here."
+            ]
+        }
+    ],
+
+    royal: [
+        {
+            title: "A FRIEND REUNITED",
+            lines: [
+                "You return to the dungeon and free the prisoner.",
+                "Together, you leave the castle behind.",
+                "For the first time, the road ahead feels hopeful."
+            ]
+        },
+        {
+            title: "A MESSAGE OF PEACE",
+            lines: [
+                "Back in your homeland, you gather the people.",
+                "You tell them the King has fallen and the treasure",
+                "has been recovered. Then you make an invitation:"
+            ]
+        },
+        {
+            title: "TWO KINGDOMS, ONE HOME",
+            lines: [
+                "\"There is room for all of us. Come with us.\"",
+                "People from the neighbouring kingdom accept.",
+                "Families, workers and travellers join your journey.",
+                "No one is forced to leave; the choice is theirs."
+            ]
+        },
+        {
+            title: "A NEW CROWN",
+            lines: [
+                "The rescued prisoner stands beside you.",
+                "The two kingdoms begin rebuilding together.",
+                "You are chosen to lead—not through fear,",
+                "but because you brought people together."
+            ]
+        },
+        {
+            title: "THE ROYAL ENDING",
+            lines: [
+                "Two kingdoms. One future.",
+                "A new chapter begins."
+            ]
+        }
+    ]
+};
+
+function advanceEnding() {
+    if (!endingStarted) return;
+
+    const scenes = endingScenes[endingType] || endingScenes.neutral;
+
+    if (endingPage < scenes.length - 1) {
+        endingPage++;
+        endingStartTime = Date.now();
+        endingFade = 1;
+    } else {
+        endingStarted = false;
+        endingPage = 0;
+
+        if (endingType === "royal") {
+            royalEndingComplete = true;
+            saveGame();
+        }
+
+        gameRunning = false;
+        gameScreen.classList.add("hidden");
+        menuScreen.classList.remove("hidden");
+
+        playMusic("menu");
+        updateContinueButton();
+    }
+}
+
 function drawEnding() {
-    ctx.fillStyle = "#000000";
+    const scenes = endingScenes[endingType] || endingScenes.neutral;
+    const scene = scenes[endingPage] || scenes[scenes.length - 1];
+
+    const elapsed = Date.now() - endingStartTime;
+    endingFade = Math.max(0, 1 - elapsed / 420);
+
+    ctx.fillStyle = "#080812";
     ctx.fillRect(0, 0, W, H);
 
-    if (Date.now() - endingStartTime >= 1000) {
-        ctx.fillStyle = "white";
-        ctx.font = "bold 42px monospace";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
+    const glow = ctx.createRadialGradient(
+        W / 2, H / 2, 15,
+        W / 2, H / 2, 310
+    );
 
-        ctx.fillText("THE END.", W / 2, H / 2);
+    glow.addColorStop(
+        0,
+        endingType === "royal"
+            ? "rgba(225,174,78,0.16)"
+            : "rgba(120,130,170,0.12)"
+    );
 
-        ctx.textAlign = "left";
-        ctx.textBaseline = "alphabetic";
-    }
+    glow.addColorStop(1, "rgba(0,0,0,0)");
+
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.save();
+
+    ctx.globalAlpha = 1 - endingFade;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    ctx.fillStyle = endingType === "royal"
+        ? "#f4d58a"
+        : "#e7e7ee";
+
+    ctx.font = "bold 25px monospace";
+    ctx.fillText(scene.title, W / 2, 105);
+
+    ctx.fillStyle = "#f0edf5";
+    ctx.font = "14px monospace";
+
+    scene.lines.forEach((line, index) => {
+        ctx.fillText(line, W / 2, 165 + index * 27);
+    });
+
+    ctx.fillStyle = "#a9a3b5";
+    ctx.font = "11px monospace";
+
+    ctx.fillText(
+        "PRESS ENTER / Z / E TO CONTINUE",
+        W / 2,
+        H - 45
+    );
+
+    ctx.fillText(
+        (endingPage + 1) + " / " + scenes.length,
+        W / 2,
+        H - 22
+    );
+
+    ctx.restore();
 }
 
 // =====================================================
@@ -1576,7 +1739,14 @@ document.addEventListener("keydown", e => {
     const key = e.key.toLowerCase();
 
     if (endingStarted) {
-        e.preventDefault();
+        if (
+            ["enter", "z", "e", " "].includes(key) &&
+            !e.repeat
+        ) {
+            e.preventDefault();
+            advanceEnding();
+        }
+
         return;
     }
 
@@ -1617,8 +1787,11 @@ document.addEventListener("keydown", e => {
     }
 
     if ([
-        "arrowup", "arrowdown",
-        "arrowleft", "arrowright", " "
+        "arrowup",
+        "arrowdown",
+        "arrowleft",
+        "arrowright",
+        " "
     ].includes(key)) {
         e.preventDefault();
     }
@@ -1629,6 +1802,7 @@ document.addEventListener("keydown", e => {
         if (key === "m") {
             gameRunning = false;
             gameOver = false;
+
             gameScreen.classList.add("hidden");
             menuScreen.classList.remove("hidden");
 
@@ -1640,7 +1814,10 @@ document.addEventListener("keydown", e => {
     }
 
     if (dialogueOpen) {
-        if (key === "e" || key === "enter") closeDialogue();
+        if (key === "e" || key === "enter") {
+            closeDialogue();
+        }
+
         return;
     }
 
@@ -1667,6 +1844,7 @@ document.addEventListener("keydown", e => {
         } else {
             togglePause();
         }
+
         return;
     }
 
@@ -1936,7 +2114,7 @@ function interact() {
                 "The exit is sealed. You must defeat the King and recover the treasure first."
             );
         } else {
-            startEnding();
+            startEnding(prisonerRescued ? "royal" : "neutral");
         }
 
         return;
@@ -1944,10 +2122,10 @@ function interact() {
 
     for (const npc of npcs[currentRoom] || []) {
         if (
-    npc.name === "SLEEPY GUARD" &&
-    sleepyGuard &&
-    (sleepyGuard.active || sleepyGuard.defeated)
-    ) continue;
+            npc.name === "SLEEPY GUARD" &&
+            sleepyGuard &&
+            (sleepyGuard.active || sleepyGuard.defeated)
+        ) continue;
 
         if (distance(player, npc) < 55) {
             const line = npc.lines[npc.line % npc.lines.length];
@@ -1989,6 +2167,19 @@ function interact() {
         distance(player, { x: 320, y: 160 }) < 55
     ) {
         activateCheckpoint();
+        return;
+    }
+
+    if (
+        currentRoom === "dungeon" &&
+        distance(player, { x: 150, y: 180 }) < 60 &&
+        !prisonerRescued &&
+        king && king.hp <= 0
+    ) {
+        prisonerRescued = true;
+        saveGame();
+
+        startEnding("royal");
         return;
     }
 
@@ -2063,15 +2254,21 @@ function findRoomRoute(start, destination) {
         if (room === destination) return path;
 
         for (const door of rooms[room].doors) {
-            if (!visited.has(door.target)) {
-                visited.add(door.target);
-                queue.push([door.target, [...path, { from: room, door }]]);
-            }
+            if (visited.has(door.target)) continue;
+
+            visited.add(door.target);
+            queue.push([
+                door.target,
+                [...path, door.target]
+            ]);
         }
     }
 
-    return null;
+    return [];
 }
+// =====================================================
+// ENEMY ROUTING — CONTINUED
+// =====================================================
 
 function moveEnemyThroughDoor(enemy, door) {
     enemy.room = door.target;
@@ -2146,7 +2343,14 @@ function updateOneEnemy(enemy) {
     const route = findRoomRoute(enemy.room, currentRoom);
     if (!route || !route.length) return;
 
-    const door = route[0].door;
+    // Part 1 stores room names in the route.
+    const nextRoom = route[0];
+    const door = rooms[enemy.room].doors.find(
+        item => item.target === nextRoom
+    );
+
+    if (!door) return;
+
     const targetX = door.x * TILE + 16;
     const targetY = door.y * TILE + 16;
 
@@ -2200,96 +2404,143 @@ let battle = {
         y: 250,
         size: 12
     },
-    arena: {
-        x: 190,
-        y: 175,
-        w: 260,
-        h: 150
-    },
-    actOptions: ["TALK", "JOKE", "CHEER", "THREATEN", "CHECK"],
-    actScore: 0,
-    itemOptions: [],
-    bulletPattern: 0,
-    turnCount: 0
+    turn: 0,
+    action: "",
+    attackPower: 0,
+    enemyTurnStarted: false,
+    enemyTurnFinished: false,
+    attackAnimation: 0,
+    dodgeTime: 0,
+    spared: false,
+    mercyAvailable: false,
+    defendBonus: 0,
+    lastDamage: 0
 };
 
-function startBattle(enemy) {
-    if (
-        battleOpen ||
-        !enemy ||
-        !enemy.active ||
-        enemy.defeated ||
-        enemy.hp <= 0
-    ) return;
+// =====================================================
+// BATTLE MUSIC
+// =====================================================
 
-    battleOpen = true;
-    keys = {};
-    battle.enemy = enemy;
+function updateBattleMusic(enemy) {
+    if (!enemy) return;
 
-    if (enemy.id === "king") {
-        playMusic("king");
-    } else if (enemy.id === "hunter") {
+    if (enemy.id === "hunter") {
         playMusic("hunter");
+    } else if (enemy.id === "king") {
+        playMusic("king");
     } else {
         playMusic("fight");
     }
-
-    battle.phase = "menu";
-    battle.menu = "main";
-    battle.selected = 0;
-    battle.message = enemy.name + " blocks your way!";
-    battle.actScore = enemy.actScore || 0;
-    battle.turnCount = 0;
-    battle.bullets = [];
-    battle.bulletTimer = 0;
-    battle.bulletPattern = 0;
-    battle.heart.x = battle.arena.x + battle.arena.w / 2;
-    battle.heart.y = battle.arena.y + battle.arena.h / 2;
 }
 
 // =====================================================
-// BATTLE MENUS
+// START BATTLE
 // =====================================================
 
-const mainOptions = ["FIGHT", "ACT", "ITEM", "MERCY"];
+function startBattle(enemy) {
+    if (!enemy || enemy.defeated || enemy.hp <= 0 || battleOpen) return;
+
+    battleOpen = true;
+    inventoryOpen = false;
+    dialogueOpen = false;
+
+    battle.enemy = enemy;
+    battle.phase = "menu";
+    battle.menu = "main";
+    battle.selected = 0;
+    battle.message = enemy.name + " blocks your path!";
+    battle.turn = 0;
+    battle.action = "";
+    battle.bullets = [];
+    battle.bulletTimer = 0;
+    battle.attackAnimation = 0;
+    battle.dodgeTime = 0;
+    battle.spared = false;
+    battle.mercyAvailable = false;
+    battle.defendBonus = 0;
+    battle.enemyTurnStarted = false;
+    battle.enemyTurnFinished = false;
+    battle.lastDamage = 0;
+
+    battle.heart.x = W / 2;
+    battle.heart.y = 250;
+
+    keys = {};
+
+    updateBattleMusic(enemy);
+}
+
+// =====================================================
+// BATTLE MENU
+// =====================================================
+
+const battleMenus = {
+    main: ["FIGHT", "ACT", "ITEM", "MERCY"],
+    act: ["CHECK", "TALK", "JOKE", "BACK"],
+    item: [],
+    mercy: ["SPARE", "FLEE", "BACK"]
+};
+
+function getBattleMenu() {
+    if (battle.menu === "item") {
+        return inventory
+            .filter(item => itemInfo[item.id])
+            .map(item => itemInfo[item.id].name)
+            .concat(["BACK"]);
+    }
+
+    return battleMenus[battle.menu] || battleMenus.main;
+}
+
+function changeBattleSelection(direction) {
+    const menu = getBattleMenu();
+
+    if (!menu.length) {
+        battle.selected = 0;
+        return;
+    }
+
+    battle.selected =
+        (battle.selected + direction + menu.length) % menu.length;
+}
 
 function handleBattleInput(key) {
     if (!battleOpen) return;
 
-    if (battle.phase === "aim") {
-        if (key === "enter" || key === "e") resolveAttack();
+    if (battle.phase === "dodge") {
         return;
     }
 
-    if (battle.phase === "dodge") return;
-
-    if (battle.phase === "message") {
-        if (key === "enter" || key === "e") continueBattle();
+    if (battle.phase === "attack") {
         return;
     }
 
-    const options = getCurrentOptions();
-    if (!options.length) return;
-
-    const columns = Math.min(2, options.length);
-
-    if (key === "arrowleft" || key === "a") {
-        if (battle.selected % columns > 0) battle.selected--;
+    if (
+        key === "arrowup" || key === "w"
+    ) {
+        changeBattleSelection(-1);
+        return;
     }
 
-    if (key === "arrowright" || key === "d") {
-        if (
-            battle.selected % columns < columns - 1 &&
-            battle.selected + 1 < options.length
-        ) battle.selected++;
+    if (
+        key === "arrowdown" || key === "s"
+    ) {
+        changeBattleSelection(1);
+        return;
     }
 
-    if (key === "arrowup" || key === "w") {
-        battle.selected = Math.max(0, battle.selected - columns);
+    if (
+        key === "arrowleft" || key === "a"
+    ) {
+        changeBattleSelection(-1);
+        return;
     }
 
-    if (key === "arrowdown" || key === "s") {
-        battle.selected = Math.min(options.length - 1, battle.selected + columns);
+    if (
+        key === "arrowright" || key === "d"
+    ) {
+        changeBattleSelection(1);
+        return;
     }
 
     if (key === "escape") {
@@ -2297,44 +2548,35 @@ function handleBattleInput(key) {
             battle.menu = "main";
             battle.selected = 0;
         }
+
         return;
     }
 
-    if (key === "enter" || key === "e") selectBattleOption();
+    if (key === "enter" || key === " ") {
+        selectBattleOption();
+    }
 }
 
-function getCurrentOptions() {
-    if (battle.menu === "main") return mainOptions;
-    if (battle.menu === "act") return battle.actOptions;
-    if (battle.menu === "item") return battle.itemOptions;
-    if (battle.menu === "mercy") return ["FLEE", "SPARE"];
-    return mainOptions;
-}
+// =====================================================
+// BATTLE OPTION SELECTION
+// =====================================================
 
 function selectBattleOption() {
-    const options = getCurrentOptions();
-    const selected = options[battle.selected];
+    const menu = getBattleMenu();
+    const option = menu[battle.selected];
 
-    if (!selected) return;
+    if (!option) return;
 
     if (battle.menu === "main") {
-        if (selected === "FIGHT") startAim();
-
-        if (selected === "ACT") {
+        if (option === "FIGHT") {
+            beginPlayerAttack();
+        } else if (option === "ACT") {
             battle.menu = "act";
             battle.selected = 0;
-        }
-
-        if (selected === "ITEM") {
+        } else if (option === "ITEM") {
             battle.menu = "item";
-            battle.itemOptions = inventory.map(i =>
-                itemInfo[i.id]?.name || i.id
-            );
-            battle.itemOptions.push("BACK");
             battle.selected = 0;
-        }
-
-        if (selected === "MERCY") {
+        } else if (option === "MERCY") {
             battle.menu = "mercy";
             battle.selected = 0;
         }
@@ -2343,37 +2585,40 @@ function selectBattleOption() {
     }
 
     if (battle.menu === "act") {
-        performAct(selected);
+        if (option === "BACK") {
+            battle.menu = "main";
+            battle.selected = 0;
+        } else {
+            performAct(option);
+        }
+
         return;
     }
 
     if (battle.menu === "item") {
-        if (selected === "BACK") {
+        if (option === "BACK") {
             battle.menu = "main";
             battle.selected = 0;
-            return;
-        }
-
-        const item = inventory.find(i =>
-            itemInfo[i.id]?.name === selected
-        );
-
-        if (!item) return;
-
-        const used = useItem(item.id);
-
-        if (used) {
-            finishPlayerTurn();
         } else {
-            battle.phase = "message";
+            const item = inventory.find(
+                i => itemInfo[i.id]?.name === option
+            );
+
+            if (item) useBattleItem(item.id);
         }
 
         return;
     }
 
     if (battle.menu === "mercy") {
-        if (selected === "FLEE") fleeBattle();
-        if (selected === "SPARE") spareEnemy();
+        if (option === "BACK") {
+            battle.menu = "main";
+            battle.selected = 0;
+        } else if (option === "SPARE") {
+            attemptSpare();
+        } else if (option === "FLEE") {
+            attemptFlee();
+        }
     }
 }
 
@@ -2383,1500 +2628,779 @@ function selectBattleOption() {
 
 function performAct(action) {
     const enemy = battle.enemy;
-    let response = "";
+    if (!enemy) return;
 
-    const reactions = {
-        TALK: {
-            hunter: "The Hunter refuses to listen.",
-            king: "The King ignores your words.",
-            default: "The enemy listens for a moment."
-        },
-        JOKE: {
-            hunter: "The Hunter does not find it funny.",
-            king: "The King looks unimpressed.",
-            default: "The enemy tries not to laugh."
-        },
-        CHEER: {
-            hunter: "The Hunter becomes more determined.",
-            king: "The King raises an eyebrow.",
-            default: "The enemy seems encouraged."
-        },
-        THREATEN: {
-            hunter: "The Hunter steps forward.",
-            king: "The King is not intimidated.",
-            default: "The enemy looks uncertain."
-        },
-        CHECK: {
-            hunter: "A relentless guardian. It will not give up.",
-            king: "The ruler of this castle. Extremely powerful.",
-            default: "HP: " + enemy.hp + " / " + enemy.maxHp
-        }
-    };
+    let message = "";
 
     if (action === "CHECK") {
-        response = reactions.CHECK[enemy.id] || reactions.CHECK.default;
-        battle.message = response;
-        battle.phase = "message";
-        return;
+        message =
+            enemy.name + " — HP " +
+            enemy.hp + "/" + enemy.maxHp +
+            ". " + getEnemyDescription(enemy);
     }
 
-    if (enemy.id === "hunter" || enemy.id === "king") {
-        response = reactions[action][enemy.id];
-    } else {
-        response = reactions[action].default;
+    if (action === "TALK") {
+        enemy.actScore += 1;
 
-        const points = {
-            TALK: 1,
-            JOKE: 1,
-            CHEER: 2,
-            THREATEN: -1
-        };
+        message = getEnemyTalk(enemy);
 
-        battle.actScore += points[action] || 0;
-    }
-
-    enemy.actScore = battle.actScore;
-    battle.message = response;
-    battle.phase = "message";
-}
-
-function continueBattle() {
-    const enemy = battle.enemy;
-
-    // HP IS THE FINAL AUTHORITY.
-    // A zero-HP enemy always counts as defeated.
-    if (enemy && enemy.hp <= 0) {
-        finishBattle(true);
-        return;
-    }
-
-    if (battle.message === "YOU WON!") {
-        finishBattle(true);
-        return;
-    }
-
-    if (battle.message === "YOU WERE SPARED!") {
-        finishBattle(false, true);
-        return;
-    }
-
-    if (battle.message === "YOU ESCAPED!") {
-        finishBattle(false);
-        return;
-    }
-
-    finishPlayerTurn();
-}
-
-// =====================================================
-// ACCURACY ATTACK
-// =====================================================
-
-function startAim() {
-    battle.phase = "aim";
-    battle.aimX = 0;
-    battle.aimDirection = 1;
-
-    battle.aimSpeed =
-        battle.enemy.id === "hunter" ? 7 :
-        battle.enemy.id === "king" ? 8 : 5;
-
-    battle.message = "PRESS ENTER NEAR THE CENTRE!";
-}
-
-function updateAim() {
-    battle.aimX += battle.aimSpeed * battle.aimDirection;
-
-    if (battle.aimX >= 260) {
-        battle.aimX = 260;
-        battle.aimDirection = -1;
-    } else if (battle.aimX <= 0) {
-        battle.aimX = 0;
-        battle.aimDirection = 1;
-    }
-}
-
-function resolveAttack() {
-    const enemy = battle.enemy;
-
-    if (!enemy || enemy.defeated || enemy.hp <= 0) {
-        if (enemy) {
-            enemy.hp = 0;
-            enemy.defeated = true;
-            enemy.active = false;
+        if (enemy.actScore >= 2) {
+            battle.mercyAvailable = true;
         }
+    }
 
-        battle.message = "YOU WON!";
-        battle.phase = "message";
+    if (action === "JOKE") {
+        enemy.actScore += 1;
+        message = getEnemyJoke(enemy);
+
+        if (enemy.actScore >= 2) {
+            battle.mercyAvailable = true;
+        }
+    }
+
+    battle.message = message;
+    beginEnemyTurn();
+}
+
+function getEnemyDescription(enemy) {
+    const descriptions = {
+        guard1: "A nervous castle guard. He looks tired.",
+        guard2: "A determined guard protecting the armory.",
+        dungeon_guard: "A strict guard who watches the prisoners.",
+        entrance_guard: "A guard who takes his job very seriously.",
+        hall_guard: "A guard who is not sure what is happening.",
+        barracks_guard: "A guard who wants to impress the others.",
+        library_guard: "A quiet guard who dislikes loud noises.",
+        armory_guard: "A guard who knows every weapon in the room.",
+        garden_guard: "A guard who secretly likes the flowers.",
+        royal_guard: "A loyal royal guard.",
+        exit_guard: "A guard who has been ordered to stop everyone.",
+        hunter: "The King's most dangerous fighter.",
+        king: "The ruler of the neighbouring kingdom."
+    };
+
+    return descriptions[enemy.id] || "An unknown opponent.";
+}
+
+function getEnemyTalk(enemy) {
+    const dialogue = {
+        guard1: "The guard tells you he only wants to go home.",
+        guard2: "The guard explains that he is protecting his family.",
+        dungeon_guard: "The guard admits that the dungeon is unfair.",
+        entrance_guard: "The guard says he never wanted to fight.",
+        hall_guard: "The guard is confused about his orders.",
+        barracks_guard: "The guard says he is afraid of the Hunter.",
+        library_guard: "The guard asks you to keep your voice down.",
+        armory_guard: "The guard remembers when the kingdom was peaceful.",
+        garden_guard: "The guard talks about the garden.",
+        royal_guard: "The royal guard says he cannot abandon the King.",
+        exit_guard: "The guard says he hopes the conflict ends soon.",
+        hunter: "The Hunter refuses to answer.",
+        king: "The King tells you that power is the only way to rule."
+    };
+
+    return dialogue[enemy.id] || "Your opponent remains silent.";
+}
+
+function getEnemyJoke(enemy) {
+    const dialogue = {
+        guard1: "You tell the guard a joke. He almost laughs.",
+        guard2: "You make a terrible pun. The guard looks confused.",
+        dungeon_guard: "You make a joke about keys. The guard sighs.",
+        entrance_guard: "The guard tries not to smile.",
+        hall_guard: "The guard laughs despite himself.",
+        barracks_guard: "The guard chuckles.",
+        library_guard: "The librarian shushes you from somewhere.",
+        armory_guard: "The guard smiles at your joke.",
+        garden_guard: "The guard laughs. A flower seems to sway.",
+        royal_guard: "The guard looks away to hide a smile.",
+        exit_guard: "The guard lets out a small laugh.",
+        hunter: "The Hunter does not find it funny.",
+        king: "The King is not amused."
+    };
+
+    return dialogue[enemy.id] || "Your joke receives no reaction.";
+}
+
+// =====================================================
+// ITEM IN BATTLE
+// =====================================================
+
+function useBattleItem(id) {
+    const info = itemInfo[id];
+
+    if (!info || info.type !== "healing") {
+        battle.message = "That item cannot be used here.";
         return;
     }
 
-    const weapon = itemInfo[equippedWeapon] || { power: 3 };
-    const distanceFromCentre = Math.abs(battle.aimX - 130);
-
-    const accuracy = Math.max(0, 1 - distanceFromCentre / 130);
-    const multiplier = 0.5 + accuracy * 1.5;
-
-    const damage = Math.max(1, Math.round(weapon.power * multiplier));
-
-    enemy.hp = Math.max(0, enemy.hp - damage);
-
-    if (enemy.hp <= 0) {
-        // IMMEDIATELY MARK THE ENEMY AS DEFEATED.
-        enemy.hp = 0;
-        enemy.defeated = true;
-        enemy.active = false;
-
-        battle.message = "YOU WON!";
-        battle.phase = "message";
+    if (player.hp >= player.maxHp) {
+        battle.message = "Your HP is already full!";
         return;
     }
+
+    const before = player.hp;
+
+    if (info.fullHeal) {
+        player.hp = player.maxHp;
+    } else {
+        player.hp = Math.min(player.maxHp, player.hp + info.heal);
+    }
+
+    removeItem(id);
 
     battle.message =
-        "Accuracy: " + Math.round(accuracy * 100) +
-        "% | Damage: " + damage;
+        "You used " + info.name + ". Recovered " +
+        (player.hp - before) + " HP.";
 
-    battle.phase = "message";
+    beginEnemyTurn();
 }
 
 // =====================================================
 // MERCY
 // =====================================================
 
-function fleeBattle() {
-    if (battle.enemy.id === "king") {
-        battle.message = "You cannot flee from the King!";
-        battle.phase = "message";
-        return;
-    }
-
-    battle.message = "YOU ESCAPED!";
-    battle.phase = "message";
-}
-
-function spareEnemy() {
+function attemptSpare() {
     const enemy = battle.enemy;
+    if (!enemy) return;
 
-    if (
-        enemy.id === "hunter" ||
-        enemy.id === "king" ||
-        enemy.id === "sleepy_guard"
-    ) {
-        battle.message = "This enemy cannot be spared yet.";
-        battle.phase = "message";
+    if (enemy.id === "hunter" || enemy.id === "king") {
+        battle.message = enemy.name + " cannot be spared yet.";
         return;
     }
 
-    if (battle.actScore < 3) {
-        battle.message = "The enemy is not ready to be spared.";
-        battle.phase = "message";
+    if (!battle.mercyAvailable && enemy.actScore < 2) {
+        battle.message = enemy.name + " is not ready to listen.";
         return;
     }
 
     enemy.spared = true;
+    enemy.defeated = true;
+    enemy.active = false;
+    enemy.hp = 0;
+
+    battle.message = enemy.name + " decided not to fight anymore.";
+
+    finishBattle(true);
+}
+
+function attemptFlee() {
+    const enemy = battle.enemy;
+    if (!enemy) return;
+
+    if (enemy.id === "hunter" || enemy.id === "king") {
+        battle.message = "There is no escape from this battle!";
+        beginEnemyTurn();
+        return;
+    }
+
+    enemy.fleeGrace = 120;
+    enemy.alerted = false;
+
+    battle.message = "You escaped from the battle!";
+    finishBattle(false);
+}
+
+// =====================================================
+// PLAYER ATTACK
+// =====================================================
+
+function beginPlayerAttack() {
+    const weapon = itemInfo[equippedWeapon];
+
+    battle.phase = "attack";
+    battle.attackAnimation = 0;
+    battle.attackPower = weapon?.power || 3;
+    battle.message = "Press ENTER when the marker is near the centre!";
+    battle.aimX = 80;
+    battle.aimDirection = 1;
+    battle.aimSpeed = 5;
+}
+
+function updatePlayerAttack() {
+    if (battle.phase !== "attack") return;
+
+    battle.attackAnimation++;
+
+    battle.aimX += battle.aimDirection * battle.aimSpeed;
+
+    if (battle.aimX >= 440) {
+        battle.aimX = 440;
+        battle.aimDirection = -1;
+    }
+
+    if (battle.aimX <= 80) {
+        battle.aimX = 80;
+        battle.aimDirection = 1;
+    }
+}
+
+function confirmPlayerAttack() {
+    if (battle.phase !== "attack") return;
+
+    const accuracy = Math.max(
+        0,
+        1 - Math.abs(battle.aimX - 260) / 180
+    );
+
+    const damage = Math.max(
+        1,
+        Math.round(battle.attackPower * (0.5 + accuracy * 1.5))
+    );
+
+    const enemy = battle.enemy;
+
+    enemy.hp = Math.max(0, enemy.hp - damage);
+
+    battle.message =
+        "You dealt " + damage + " damage!";
+
+    battle.phase = "message";
+    battle.lastDamage = damage;
+
+    if (enemy.hp <= 0) {
+        enemy.hp = 0;
+        enemy.defeated = true;
+        enemy.active = false;
+
+        setTimeout(() => {
+            if (!battleOpen) return;
+
+            handleEnemyDefeat(enemy);
+        }, 900);
+
+        return;
+    }
+
+    setTimeout(() => {
+        if (!battleOpen) return;
+        beginEnemyTurn();
+    }, 650);
+}
+
+// =====================================================
+// ENEMY DEFEAT EVENTS
+// =====================================================
+
+function handleEnemyDefeat(enemy) {
+    if (!enemy) return;
+
+    enemy.hp = 0;
+    enemy.defeated = true;
     enemy.active = false;
 
-    battle.message = "YOU WERE SPARED!";
-    battle.phase = "message";
-}
+    if (enemy.id === "king") {
+        addItem("royal_treasure");
 
-// =====================================================
-// PLAYER TURN END
-// =====================================================
+        battle.message =
+            "The King has been defeated! You recovered the Royal Treasure.";
 
-function finishPlayerTurn() {
-    battle.menu = "main";
-    battle.selected = 0;
-    battle.phase = "dodge";
+        finishBattle(false);
 
-    battle.turnCount++;
-    battle.bullets = [];
-    battle.bulletTimer = 0;
+        setTimeout(() => {
+            if (!gameRunning) return;
 
-    battle.heart.x = battle.arena.x + battle.arena.w / 2;
-    battle.heart.y = battle.arena.y + battle.arena.h / 2;
-
-    battle.bulletDuration =
-        battle.enemy.id === "king" ? 220 :
-        battle.enemy.id === "hunter" ? 210 : 180;
-
-    battle.message = battle.enemy.name + " attacks!";
-}
-
-// =====================================================
-// BULLET PATTERNS
-// =====================================================
-
-function spawnBullet(x, y, vx, vy, radius = 6) {
-    battle.bullets.push({ x, y, vx, vy, radius });
-}
-
-function firePattern() {
-    const arena = battle.arena;
-    const enemy = battle.enemy;
-    const difficulty = enemy.difficulty || 1;
-
-    const pattern = battle.bulletPattern % 4;
-    battle.bulletPattern++;
-
-    const speed = 0.7 + difficulty * 0.13;
-
-    if (pattern === 0) {
-        const startX = arena.x + 20 + Math.random() * (arena.w - 40);
-        const startY = arena.y + 3;
-
-        const dx = battle.heart.x - startX;
-        const dy = battle.heart.y - startY;
-        const length = Math.hypot(dx, dy) || 1;
-
-        spawnBullet(startX, startY, dx / length * speed, dy / length * speed);
-    } else if (pattern === 1) {
-        const y = arena.y + 20 + Math.random() * (arena.h - 40);
-        const count = 1 + difficulty;
-
-        for (let i = 0; i < count; i++) {
-            spawnBullet(
-                arena.x + 3,
-                y + i * 15 - (count - 1) * 7,
-                speed,
-                0
+            showDialogue(
+                "NARRATOR",
+                "The King has fallen. The castle is finally quiet. You should check the dungeon."
             );
-        }
-    } else if (pattern === 2) {
-        const count = 1 + difficulty;
+        }, 400);
 
-        for (let i = 0; i < count; i++) {
-            spawnBullet(
-                arena.x + 15 + Math.random() * (arena.w - 30),
-                arena.y + 3,
-                (Math.random() - 0.5) * 0.35,
-                speed
-            );
-        }
-    } else {
-        const y = arena.y + 20 + Math.random() * (arena.h - 40);
-        const count = 1 + difficulty;
-
-        for (let i = 0; i < count; i++) {
-            spawnBullet(
-                arena.x + arena.w - 3,
-                y + i * 15 - (count - 1) * 7,
-                -speed,
-                0
-            );
-        }
-    }
-}
-
-// =====================================================
-// DODGE UPDATE
-// =====================================================
-
-function updateDodge() {
-    const arena = battle.arena;
-    const heart = battle.heart;
-
-    if (
-        !battle.enemy ||
-        battle.enemy.defeated ||
-        battle.enemy.hp <= 0
-    ) {
-        battle.bullets = [];
-        battle.phase = "message";
-        battle.message = "YOU WON!";
         return;
     }
 
-    const speed = 3.3;
+    if (enemy.id === "hunter") {
+        battle.message =
+            "THE HUNTER HAS BEEN DEFEATED!";
 
-    if (keys["arrowleft"] || keys["a"]) heart.x -= speed;
-    if (keys["arrowright"] || keys["d"]) heart.x += speed;
-    if (keys["arrowup"] || keys["w"]) heart.y -= speed;
-    if (keys["arrowdown"] || keys["s"]) heart.y += speed;
+        finishBattle(false);
 
-    heart.x = Math.max(
-        arena.x + heart.size,
-        Math.min(arena.x + arena.w - heart.size, heart.x)
-    );
-
-    heart.y = Math.max(
-        arena.y + heart.size,
-        Math.min(arena.y + arena.h - heart.size, heart.y)
-    );
-
-    battle.bulletTimer++;
-
-    const difficulty = Math.max(1, battle.enemy.difficulty || 1);
-    const interval = Math.max(24, 42 - difficulty * 4);
-
-    if (battle.bulletTimer === 1 || battle.bulletTimer % interval === 0) {
-        firePattern();
-    }
-
-    for (const bullet of battle.bullets) {
-        bullet.x += bullet.vx;
-        bullet.y += bullet.vy;
-
-        const distance = Math.hypot(
-            bullet.x - heart.x,
-            bullet.y - heart.y
-        );
-
-        if (distance < bullet.radius + heart.size / 2) {
-            const hitDamage =
-                (battle.enemy.id === "hunter" || battle.enemy.id === "king")
-                    ? 1
-                    : 2;
-
-            player.hp = Math.max(0, player.hp - hitDamage);
-            bullet.x = -1000;
-
-            if (player.hp <= 0) {
-                triggerGameOver();
-                return;
-            }
-        }
-    }
-
-    battle.bullets = battle.bullets.filter(bullet =>
-        Number.isFinite(bullet.x) &&
-        Number.isFinite(bullet.y) &&
-        bullet.x > arena.x - 35 &&
-        bullet.x < arena.x + arena.w + 35 &&
-        bullet.y > arena.y - 35 &&
-        bullet.y < arena.y + arena.h + 35
-    );
-
-    if (battle.bulletTimer >= battle.bulletDuration) {
-        battle.bullets = [];
-        battle.phase = "menu";
-        battle.menu = "main";
-        battle.selected = 0;
-        keys = {};
-        battle.message = "Your turn!";
-    }
-}
-
-// =====================================================
-// END BATTLE
-// =====================================================
-
-function finishBattle(victory, spared = false) {
-    const enemy = battle.enemy;
-
-    if (!enemy) {
-        battleOpen = false;
-        battle.enemy = null;
-        return;
-    }
-
-    // EVEN IF THE MESSAGE IS WRONG, ZERO HP MEANS VICTORY.
-    if (enemy.hp <= 0) {
-        victory = true;
-        enemy.hp = 0;
-    }
-
-    if (victory || spared) {
-        enemy.active = false;
-        enemy.defeated = true;
-
-        if (enemy.id === "hunter") {
+        setTimeout(() => {
             wakeSleepyGuardIfReady();
 
             showDialogue(
                 "NARRATOR",
-                "The Hunter has been defeated! Somewhere in the barracks, a sleepy guard has awakened..."
+                "The Hunter has fallen. But the castle still has secrets..."
             );
-        } else if (enemy.id === "king") {
-            if (victory) {
-                if (!hasItem("kings_key")) addItem("kings_key");
-                if (!hasItem("royal_treasure")) addItem("royal_treasure");
-            }
+        }, 400);
 
-            showDialogue(
-                "NARRATOR",
-                "You defeated the King and recovered the stolen treasure! The King's Key is now yours. The castle exit is unlocked!"
-            );
-        } else if (enemy.id === "sleepy_guard") {
-            showDialogue(
-                "NARRATOR",
-                "The awakened guard has been defeated. The way to the King is clear!"
-            );
-        } else {
-            showDialogue("NARRATOR", "The enemy is no longer a threat.");
-        }
-    } else {
-        enemy.fleeGrace = 100;
-        showDialogue("NARRATOR", "You escaped. The enemy is still nearby!");
+        return;
     }
 
-    battleOpen = false;
-    battle.enemy = null;
+    if (enemy.id === "sleepy_guard") {
+        battle.message =
+            "The awakened guard has been defeated!";
 
-    playMusic("exploration");
+        finishBattle(false);
+        unlockHunterIfReady();
+        return;
+    }
 
+    finishBattle(false);
     unlockHunterIfReady();
-    wakeSleepyGuardIfReady();
-
-    saveGame();
 }
 
 // =====================================================
-// BATTLE UPDATE
+// ENEMY TURN
+// =====================================================
+
+function beginEnemyTurn() {
+    if (!battleOpen || !battle.enemy) return;
+
+    battle.phase = "dodge";
+    battle.turn++;
+
+    battle.bullets = [];
+    battle.bulletTimer = 0;
+    battle.dodgeTime = 0;
+
+    battle.heart.x = W / 2;
+    battle.heart.y = 250;
+
+    battle.enemyTurnStarted = true;
+    battle.enemyTurnFinished = false;
+
+    battle.message =
+        battle.enemy.name + " is preparing an attack!";
+
+    playEnemyAttackSound();
+}
+
+function playEnemyAttackSound() {
+    // Placeholder for optional battle sound effects.
+}
+
+// =====================================================
+// PROJECTILE GENERATION
+// =====================================================
+
+function spawnProjectile(x, y, vx, vy, size = 8) {
+    battle.bullets.push({
+        x,
+        y,
+        vx,
+        vy,
+        size,
+        active: true
+    });
+}
+
+function createEnemyAttack(enemy) {
+    const pattern = battle.turn % 4;
+
+    if (enemy.id === "hunter") {
+        if (pattern === 0) {
+            for (let i = 0; i < 7; i++) {
+                spawnProjectile(
+                    80 + i * 55,
+                    70,
+                    0,
+                    2.3 + i * 0.08,
+                    9
+                );
+            }
+        } else if (pattern === 1) {
+            for (let i = 0; i < 5; i++) {
+                spawnProjectile(
+                    70,
+                    120 + i * 40,
+                    2.7,
+                    0,
+                    9
+                );
+            }
+        } else if (pattern === 2) {
+            for (let i = 0; i < 6; i++) {
+                spawnProjectile(
+                    100 + i * 48,
+                    70,
+                    0,
+                    2.8,
+                    10
+                );
+            }
+        } else {
+            for (let i = 0; i < 8; i++) {
+                spawnProjectile(
+                    70 + i * 45,
+                    100,
+                    0,
+                    2.2,
+                    8
+                );
+            }
+        }
+
+        return;
+    }
+
+    if (enemy.id === "king") {
+        if (pattern === 0) {
+            for (let i = 0; i < 8; i++) {
+                spawnProjectile(
+                    65 + i * 44,
+                    75,
+                    0,
+                    2.8,
+                    10
+                );
+            }
+        } else if (pattern === 1) {
+            for (let i = 0; i < 7; i++) {
+                spawnProjectile(
+                    70,
+                    90 + i * 35,
+                    2.9,
+                    0,
+                    10
+                );
+            }
+        } else if (pattern === 2) {
+            for (let i = 0; i < 9; i++) {
+                spawnProjectile(
+                    55 + i * 40,
+                    80,
+                    0,
+                    3,
+                    10
+                );
+            }
+        } else {
+            for (let i = 0; i < 8; i++) {
+                spawnProjectile(
+                    80 + i * 42,
+                    80,
+                    0,
+                    2.5,
+                    11
+                );
+            }
+        }
+
+        return;
+    }
+
+    const count = enemy.difficulty >= 2 ? 6 : 4;
+
+    for (let i = 0; i < count; i++) {
+        spawnProjectile(
+            100 + i * 55,
+            85,
+            0,
+            2 + enemy.difficulty * 0.3,
+            8
+        );
+    }
+}
+
+// =====================================================
+// UPDATE BATTLE
 // =====================================================
 
 function updateBattle() {
     if (!battleOpen) return;
-    if (battle.phase === "aim") updateAim();
-    if (battle.phase === "dodge") updateDodge();
-}
 
-// =====================================================
-// PLAYER MOVEMENT
-// =====================================================
+    if (battle.phase === "attack") {
+        updatePlayerAttack();
+        return;
+    }
 
-function updatePlayer() {
-    if (
-        dialogueOpen ||
-        paused ||
-        inventoryOpen ||
-        battleOpen ||
-        gameOver ||
-        endingStarted
-    ) return;
+    if (battle.phase !== "dodge") return;
+
+    battle.dodgeTime++;
+
+    if (battle.bulletTimer === 0) {
+        createEnemyAttack(battle.enemy);
+    }
+
+    battle.bulletTimer++;
+
+    const heart = battle.heart;
+    const speed = 3.5;
 
     let dx = 0;
     let dy = 0;
 
-    if (keys["w"] || keys["arrowup"]) dy--;
-    if (keys["s"] || keys["arrowdown"]) dy++;
-    if (keys["a"] || keys["arrowleft"]) dx--;
-    if (keys["d"] || keys["arrowright"]) dx++;
+    if (keys["arrowleft"] || keys["a"]) dx--;
+    if (keys["arrowright"] || keys["d"]) dx++;
+    if (keys["arrowup"] || keys["w"]) dy--;
+    if (keys["arrowdown"] || keys["s"]) dy++;
 
     if (dx && dy) {
         dx *= 0.707;
         dy *= 0.707;
     }
 
-    const nx = player.x + dx * player.speed;
-    const ny = player.y + dy * player.speed;
+    heart.x += dx * speed;
+    heart.y += dy * speed;
 
-    if (canMove(nx, player.y)) player.x = nx;
-    if (canMove(player.x, ny)) player.y = ny;
-}
+    heart.x = Math.max(55, Math.min(W - 55, heart.x));
+    heart.y = Math.max(90, Math.min(340, heart.y));
 
-// =====================================================
-// CAMERA
-// =====================================================
+    battle.bullets.forEach(bullet => {
+        if (!bullet.active) return;
 
-function updateCamera() {
-    const mapWidth = getMap()[0].length * TILE;
-    const mapHeight = getMap().length * TILE;
+        bullet.x += bullet.vx;
+        bullet.y += bullet.vy;
 
-    camera.x = Math.max(0, Math.min(player.x - W / 2, mapWidth - W));
-    camera.y = Math.max(0, Math.min(player.y - H / 2, mapHeight - H));
-}
+        const dist = Math.hypot(
+            heart.x - bullet.x,
+            heart.y - bullet.y
+        );
 
-// =====================================================
-// DRAW MAP
-// =====================================================
+        if (dist < bullet.size + heart.size) {
+            bullet.active = false;
 
-function drawMap() {
-    const map = getMap();
+            const damage = Math.max(
+                1,
+                battle.enemy.damage - battle.defendBonus
+            );
 
-    for (let row = 0; row < map.length; row++) {
-        for (let col = 0; col < map[row].length; col++) {
-            const x = col * TILE - camera.x;
-            const y = row * TILE - camera.y;
+            player.hp = Math.max(0, player.hp - damage);
+            battle.lastDamage = damage;
 
-            if (map[row][col] === "#") {
-                ctx.fillStyle = "#292334";
-                ctx.fillRect(x, y, TILE, TILE);
-
-                ctx.fillStyle = "#41364e";
-                ctx.fillRect(x + 2, y + 2, TILE - 4, 5);
-            } else {
-                ctx.fillStyle = "#51445a";
-                ctx.fillRect(x, y, TILE, TILE);
-
-                ctx.fillStyle = "#5b4b62";
-                ctx.fillRect(x + 2, y + 2, TILE - 4, TILE - 4);
+            if (player.hp <= 0) {
+                triggerGameOver();
             }
         }
-    }
 
-    for (const door of getRoom().doors) {
-        const x = door.x * TILE - camera.x;
-        const y = door.y * TILE - camera.y;
-
-        ctx.fillStyle = "#a66a37";
-        ctx.fillRect(x + 5, y + 3, 22, 29);
-
-        ctx.fillStyle = "#ffca64";
-        ctx.fillRect(x + 21, y + 16, 3, 3);
-    }
-
-    if (currentRoom === "exit") {
-        const x = exitDoorPosition.x - camera.x;
-        const y = exitDoorPosition.y - camera.y;
-        const unlocked = hasItem("royal_treasure");
-
-        ctx.fillStyle = unlocked ? "#b17a3c" : "#633c35";
-        ctx.fillRect(x - 13, y - 16, 26, 32);
-
-        ctx.fillStyle = unlocked ? "#ffcf77" : "#a64b55";
-        ctx.fillRect(x - 3, y - 3, 6, 6);
-
-        ctx.fillStyle = unlocked ? "#ffe7a3" : "#e75b68";
-        ctx.font = "9px monospace";
-        ctx.textAlign = "center";
-        ctx.fillText(unlocked ? "EXIT" : "LOCKED", x, y - 23);
-        ctx.textAlign = "left";
-    }
-}
-
-// =====================================================
-// DRAW FURNITURE
-// =====================================================
-
-function drawFurniture() {
-    for (const object of furniture[currentRoom] || []) {
-        const x = object.x * TILE - camera.x;
-        const y = object.y * TILE - camera.y;
-
-        if (object.type === "barrel") {
-            ctx.fillStyle = "#88522d";
-            ctx.fillRect(x + 5, y + 3, 22, 26);
-
-            ctx.fillStyle = "#c18a4c";
-            ctx.fillRect(x + 5, y + 9, 22, 3);
-            ctx.fillRect(x + 5, y + 22, 22, 3);
-        }
-
-        if (object.type === "table") {
-            ctx.fillStyle = "#70452d";
-            ctx.fillRect(x + 2, y + 5, 28, 9);
-            ctx.fillRect(x + 5, y + 13, 5, 17);
-            ctx.fillRect(x + 22, y + 13, 5, 17);
-        }
-
-        if (object.type === "bookshelf") {
-            ctx.fillStyle = "#66402d";
-            ctx.fillRect(x + 2, y + 1, 28, 30);
-
-            const colors = ["#c44d4d", "#5686ba", "#d5b75b", "#7aaf78"];
-
-            colors.forEach((color, i) => {
-                ctx.fillStyle = color;
-                ctx.fillRect(x + 5 + i * 6, y + 5, 5, 22);
-            });
-        }
-
-        if (object.type === "box") {
-            ctx.fillStyle = "#99602e";
-            ctx.fillRect(x + 3, y + 5, 26, 22);
-
-            ctx.fillStyle = "#d19a51";
-            ctx.fillRect(x + 14, y + 5, 3, 22);
-        }
-
-        if (object.type === "cushion") {
-            ctx.fillStyle = "#9a526d";
-            ctx.fillRect(x + 3, y + 9, 26, 16);
-
-            ctx.fillStyle = "#d17b9c";
-            ctx.fillRect(x + 6, y + 11, 20, 3);
-        }
-    }
-}
-
-// =====================================================
-// DRAW CHESTS
-// =====================================================
-
-function drawChests() {
-    (chests[currentRoom] || []).forEach((chest, index) => {
-        const x = chest.x * TILE - camera.x;
-        const y = chest.y * TILE - camera.y;
-
-        const opened = openedChests.includes(currentRoom + "_" + index);
-
-        ctx.fillStyle = opened ? "#59402d" : "#9b5c2d";
-        ctx.fillRect(x + 4, y + 10, 24, 17);
-
-        ctx.fillStyle = opened ? "#453328" : "#c17a3b";
-        ctx.fillRect(x + 4, y + 6, 24, 7);
-
-        if (!opened) {
-            ctx.fillStyle = "#ffcf55";
-            ctx.fillRect(x + 14, y + 14, 5, 6);
+        if (
+            bullet.x < -30 ||
+            bullet.x > W + 30 ||
+            bullet.y < -30 ||
+            bullet.y > H + 30
+        ) {
+            bullet.active = false;
         }
     });
-}
 
-// =====================================================
-// DRAW CHARACTERS
-// =====================================================
+    battle.bullets = battle.bullets.filter(
+        bullet => bullet.active
+    );
 
+    if (battle.bulletTimer >= battle.bulletDuration) {
+        battle.phase = "menu";
+        battle.menu = "main";
+        battle.selected = 0;
+        battle.bullets = [];
+        battle.defendBonus = 0;
+        battle.enemyTurnFinished = true;
 
-// =====================================================
-// DRAW CHARACTERS - MEDIEVAL REDESIGN
-// =====================================================
-
-function drawCharacter(x, y, color, label) {
-    const sx = x - camera.x;
-    const sy = y - camera.y;
-
-    // Body
-    ctx.fillStyle = color;
-    ctx.fillRect(sx - 10, sy - 4, 20, 22);
-
-    // Head
-    ctx.fillStyle = "#e8b68d";
-    ctx.fillRect(sx - 8, sy - 16, 16, 12);
-
-    // Hair
-    ctx.fillStyle = "#211b27";
-    ctx.fillRect(sx - 9, sy - 19, 18, 5);
-
-    // Eyes
-    ctx.fillStyle = "#171321";
-    ctx.fillRect(sx - 5, sy - 12, 2, 2);
-    ctx.fillRect(sx + 3, sy - 12, 2, 2);
-
-    if (label) {
-        ctx.fillStyle = "white";
-        ctx.font = "10px monospace";
-        ctx.textAlign = "center";
-        ctx.fillText(label, sx, sy - 25);
-        ctx.textAlign = "left";
+        battle.message =
+            "Your turn! Choose your next action.";
     }
 }
 
-// MEDIEVAL GUARD ARMOR
-function drawGuardCharacter(x, y, label) {
-    const sx = x - camera.x;
-    const sy = y - camera.y;
-
-    // Legs
-    ctx.fillStyle = "#393b48";
-    ctx.fillRect(sx - 8, sy + 11, 6, 9);
-    ctx.fillRect(sx + 2, sy + 11, 6, 9);
-
-    // Boots
-    ctx.fillStyle = "#29232a";
-    ctx.fillRect(sx - 9, sy + 17, 8, 4);
-    ctx.fillRect(sx + 1, sy + 17, 8, 4);
-
-    // Armor body
-    ctx.fillStyle = "#727d91";
-    ctx.fillRect(sx - 11, sy - 5, 22, 19);
-
-    // Silver chest plate
-    ctx.fillStyle = "#c4cfda";
-    ctx.fillRect(sx - 8, sy - 4, 16, 13);
-
-    // Chest plate shine
-    ctx.fillStyle = "#eef2f5";
-    ctx.fillRect(sx - 5, sy - 3, 3, 9);
-
-    // Gold belt
-    ctx.fillStyle = "#d8aa48";
-    ctx.fillRect(sx - 10, sy + 8, 20, 3);
-
-    // Shoulder armor
-    ctx.fillStyle = "#aab5c5";
-    ctx.fillRect(sx - 14, sy - 6, 6, 8);
-    ctx.fillRect(sx + 8, sy - 6, 6, 8);
-
-    // Neck
-    ctx.fillStyle = "#b98567";
-    ctx.fillRect(sx - 4, sy - 10, 8, 6);
-
-    // Helmet
-    ctx.fillStyle = "#68758c";
-    ctx.fillRect(sx - 9, sy - 21, 18, 12);
-
-    ctx.fillStyle = "#bfcbd9";
-    ctx.fillRect(sx - 7, sy - 20, 14, 5);
-
-    // Helmet visor
-    ctx.fillStyle = "#242c3c";
-    ctx.fillRect(sx - 7, sy - 13, 14, 3);
-
-    // Helmet crest
-    ctx.fillStyle = "#9d3e49";
-    ctx.fillRect(sx - 2, sy - 26, 4, 6);
-
-    // Shield
-    ctx.fillStyle = "#8b3d4b";
-    ctx.fillRect(sx + 12, sy - 2, 7, 15);
-
-    ctx.fillStyle = "#e5bd60";
-    ctx.fillRect(sx + 14, sy + 1, 3, 9);
-
-    if (label) {
-        ctx.fillStyle = "white";
-        ctx.font = "10px monospace";
-        ctx.textAlign = "center";
-        ctx.fillText(label, sx, sy - 32);
-        ctx.textAlign = "left";
-    }
-}
-
-// THE HUNTER - BLUE AND GOLD WARRIOR ARMOR
-function drawHunterCharacter(x, y, label) {
-    const sx = x - camera.x;
-    const sy = y - camera.y;
-
-    // Legs
-    ctx.fillStyle = "#173f61";
-    ctx.fillRect(sx - 9, sy + 10, 7, 11);
-    ctx.fillRect(sx + 2, sy + 10, 7, 11);
-
-    // Boots
-    ctx.fillStyle = "#d2a33e";
-    ctx.fillRect(sx - 10, sy + 18, 9, 4);
-    ctx.fillRect(sx + 1, sy + 18, 9, 4);
-
-    // Armor torso
-    ctx.fillStyle = "#155b91";
-    ctx.fillRect(sx - 12, sy - 6, 24, 19);
-
-    // Blue chest plate
-    ctx.fillStyle = "#2788bc";
-    ctx.fillRect(sx - 8, sy - 5, 16, 14);
-
-    // Gold chest decoration
-    ctx.fillStyle = "#f3c64e";
-    ctx.fillRect(sx - 2, sy - 4, 4, 12);
-    ctx.fillRect(sx - 8, sy + 2, 16, 3);
-
-    // Shoulder armor
-    ctx.fillStyle = "#e2b541";
-    ctx.fillRect(sx - 16, sy - 8, 7, 9);
-    ctx.fillRect(sx + 9, sy - 8, 7, 9);
-
-    // Neck
-    ctx.fillStyle = "#b8d5d8";
-    ctx.fillRect(sx - 4, sy - 11, 8, 6);
-
-    // Head
-    ctx.fillStyle = "#a9d6d6";
-    ctx.fillRect(sx - 8, sy - 21, 16, 13);
-
-    // Red hair / helmet crest
-    ctx.fillStyle = "#bd303d";
-    ctx.fillRect(sx - 9, sy - 24, 18, 6);
-    ctx.fillRect(sx - 5, sy - 29, 12, 6);
-    ctx.fillRect(sx + 3, sy - 33, 9, 5);
-
-    // Eyes
-    ctx.fillStyle = "#18243b";
-    ctx.fillRect(sx - 5, sy - 15, 3, 3);
-    ctx.fillRect(sx + 3, sy - 15, 3, 3);
-
-    // Gold armor edges
-    ctx.fillStyle = "#ffdb71";
-    ctx.fillRect(sx - 12, sy - 6, 2, 17);
-    ctx.fillRect(sx + 10, sy - 6, 2, 17);
-
-    if (label) {
-        ctx.fillStyle = "#ffdb71";
-        ctx.font = "10px monospace";
-        ctx.textAlign = "center";
-        ctx.fillText(label, sx, sy - 40);
-        ctx.textAlign = "left";
-    }
-}
-
-// THE KING - ROYAL DESIGN
-function drawKingCharacter(x, y, label) {
-    const sx = x - camera.x;
-    const sy = y - camera.y;
-
-    // Royal robe
-    ctx.fillStyle = "#54234e";
-    ctx.fillRect(sx - 15, sy - 4, 30, 25);
-
-    // Red robe center
-    ctx.fillStyle = "#8d2946";
-    ctx.fillRect(sx - 9, sy - 4, 18, 24);
-
-    // Gold robe decorations
-    ctx.fillStyle = "#eac052";
-    ctx.fillRect(sx - 13, sy - 3, 3, 23);
-    ctx.fillRect(sx + 10, sy - 3, 3, 23);
-    ctx.fillRect(sx - 4, sy + 3, 8, 3);
-
-    // Royal collar
-    ctx.fillStyle = "#f2ce62";
-    ctx.fillRect(sx - 10, sy - 8, 20, 6);
-
-    // Head
-    ctx.fillStyle = "#e8b68d";
-    ctx.fillRect(sx - 9, sy - 21, 18, 14);
-
-    // Beard
-    ctx.fillStyle = "#ddd2c0";
-    ctx.fillRect(sx - 7, sy - 11, 14, 7);
-    ctx.fillRect(sx - 5, sy - 4, 10, 3);
-
-    // Eyes
-    ctx.fillStyle = "#211b27";
-    ctx.fillRect(sx - 5, sy - 16, 3, 2);
-    ctx.fillRect(sx + 3, sy - 16, 3, 2);
-
-    // Crown base
-    ctx.fillStyle = "#e8bd48";
-    ctx.fillRect(sx - 11, sy - 25, 22, 5);
-
-    // Crown points
-    ctx.fillRect(sx - 10, sy - 30, 5, 6);
-    ctx.fillRect(sx - 2, sy - 33, 5, 9);
-    ctx.fillRect(sx + 6, sy - 30, 5, 6);
-
-    // Crown jewels
-    ctx.fillStyle = "#c33b55";
-    ctx.fillRect(sx - 2, sy - 25, 5, 3);
-
-    // Royal shoes
-    ctx.fillStyle = "#29232a";
-    ctx.fillRect(sx - 11, sy + 19, 9, 4);
-    ctx.fillRect(sx + 2, sy + 19, 9, 4);
-
-    if (label) {
-        ctx.fillStyle = "#ffdc76";
-        ctx.font = "10px monospace";
-        ctx.textAlign = "center";
-        ctx.fillText(label, sx, sy - 40);
-        ctx.textAlign = "left";
-    }
-}
+// =====================================================
+// DRAW NPCS
+// =====================================================
 
 function drawNPCs() {
+
+    if (typeof npcs === "undefined") return;
+
     const roomNPCs = npcs[currentRoom] || [];
 
     roomNPCs.forEach(npc => {
-        if (!npc) return;
 
-        // Hide sleepy guard when handled by the special guard system
+        if (npc.hidden) return;
+
+        const x = npc.x;
+        const y = npc.y;
+
+        // NPC BODY
+        ctx.fillStyle = npc.color || "#54b88c";
+        ctx.fillRect(x - 9, y - 5, 18, 20);
+
+        // NPC HEAD
+        ctx.fillStyle = "#f2c6a0";
+        ctx.fillRect(x - 7, y - 19, 14, 14);
+
+        // HAIR
+        ctx.fillStyle = npc.hairColor || "#49352b";
+        ctx.fillRect(x - 7, y - 21, 14, 5);
+
+        // EYES
+        ctx.fillStyle = "#222";
+        ctx.fillRect(x - 4, y - 14, 2, 2);
+        ctx.fillRect(x + 2, y - 14, 2, 2);
+
+        // NPC NAME
+        ctx.fillStyle = "white";
+        ctx.font = "10px monospace";
+        ctx.textAlign = "center";
+        ctx.fillText(npc.name, x, y - 27);
+
+        // INTERACTION INDICATOR
         if (
-            npc.name === "SLEEPY GUARD" &&
-            sleepyGuard &&
-            (sleepyGuard.active || sleepyGuard.defeated)
+            Math.hypot(player.x - x, player.y - y) < 45
         ) {
-            return;
+            ctx.fillStyle = "#ffe66d";
+            ctx.font = "12px monospace";
+            ctx.fillText("!", x, y - 34);
         }
 
-        // Character type selection
-        switch (npc.name) {
-            case "SLEEPY GUARD":
-            case "OLD KNIGHT":
-                drawGuardCharacter(npc.x, npc.y, npc.name);
-                break;
-
-            case "THE HUNTER":
-                drawHunterCharacter(npc.x, npc.y, npc.name);
-                break;
-
-            case "THE KING":
-                drawKingCharacter(npc.x, npc.y, npc.name);
-                break;
-
-            default:
-                drawCharacter(
-                    npc.x,
-                    npc.y,
-                    npc.color || "#777777",
-                    npc.name || ""
-                );
-                break;
-        }
-    });
-}
-
-function drawRoyalTreasureChest() {
-    if (currentRoom !== "royal" || !king) return;
-
-    const x = 320 - camera.x;
-    const y = 66 - camera.y;
-
-    const glow = ctx.createRadialGradient(x, y + 13, 8, x, y + 13, 82);
-    glow.addColorStop(0, "rgba(255, 205, 75, 0.34)");
-    glow.addColorStop(1, "rgba(255, 174, 40, 0)");
-
-    ctx.fillStyle = glow;
-    ctx.fillRect(x - 90, y - 65, 180, 145);
-
-    ctx.fillStyle = "#512b16";
-    ctx.fillRect(x - 49, y - 8, 98, 19);
-
-    ctx.fillStyle = "#b87522";
-    ctx.fillRect(x - 46, y - 18, 92, 20);
-
-    ctx.fillStyle = "#f4bd45";
-    ctx.fillRect(x - 42, y - 15, 84, 5);
-
-    ctx.fillStyle = "#704018";
-    ctx.fillRect(x - 54, y + 2, 108, 43);
-
-    ctx.fillStyle = "#c98228";
-    ctx.fillRect(x - 49, y + 5, 98, 35);
-
-    ctx.fillStyle = "#f5c34e";
-    ctx.fillRect(x - 49, y + 5, 98, 5);
-
-    ctx.fillStyle = "#f8d878";
-    ctx.fillRect(x - 35, y - 17, 8, 61);
-    ctx.fillRect(x + 27, y - 17, 8, 61);
-    ctx.fillRect(x - 7, y + 9, 14, 19);
-
-    ctx.fillStyle = "#fff0a6";
-    ctx.fillRect(x - 3, y + 13, 6, 7);
-
-    ctx.fillStyle = "#6b421e";
-    ctx.fillRect(x - 1, y + 20, 2, 5);
-
-    ctx.fillStyle = "#ffe49a";
-
-    for (const dx of [-43, 43]) {
-        ctx.fillRect(x + dx - 2, y + 10, 4, 4);
-        ctx.fillRect(x + dx - 2, y + 32, 4, 4);
-    }
-
-    if (!king.active && hasItem("kings_key")) {
-        ctx.save();
-        ctx.translate(x + 72, y + 25);
-        ctx.rotate(-0.35);
-
-        ctx.fillStyle = "#ffe36b";
-        ctx.fillRect(-3, -17, 6, 28);
-        ctx.fillRect(-8, -19, 16, 6);
-        ctx.fillRect(-8, -19, 5, 12);
-        ctx.fillRect(3, -19, 5, 12);
-        ctx.fillRect(1, 5, 8, 5);
-        ctx.fillRect(5, 10, 4, 6);
-
-        ctx.restore();
-    }
-}
-
-function drawEnemies() {
-    if (currentRoom === "royal") drawRoyalTreasureChest();
-
-    enemies.forEach(enemy => {
-        if (
-            enemy.active &&
-            !enemy.defeated &&
-            enemy.hp > 0 &&
-            enemy.room === currentRoom
-        ) {
-            drawGuardCharacter(enemy.x, enemy.y, enemy.name);
-        }
     });
 
-    if (
-        hunter.active &&
-        !hunter.defeated &&
-        hunter.hp > 0 &&
-        hunter.room === currentRoom
-    ) {
-        drawHunterCharacter(hunter.x, hunter.y, hunter.name);
-    }
-
-    if (
-        sleepyGuard.active &&
-        !sleepyGuard.defeated &&
-        sleepyGuard.hp > 0 &&
-        sleepyGuard.room === currentRoom
-    ) {
-        drawGuardCharacter(
-            sleepyGuard.x,
-            sleepyGuard.y,
-            sleepyGuard.name
-        );
-    }
-
-    if (
-        king.active &&
-        !king.defeated &&
-        king.hp > 0 &&
-        king.room === currentRoom
-    ) {
-        drawKingCharacter(king.x, king.y, king.name);
-    }
-}
-
-function drawPlayer() {
-    const x = player.x - camera.x;
-    const y = player.y - camera.y;
-
-    ctx.fillStyle = "#4a8ac7";
-    ctx.fillRect(x - 9, y - 5, 18, 17);
-
-    ctx.fillStyle = "#e8b68d";
-    ctx.fillRect(x - 8, y - 16, 16, 12);
-
-    ctx.fillStyle = "#392b27";
-    ctx.fillRect(x - 9, y - 18, 18, 5);
-
-    ctx.fillStyle = "#171321";
-    ctx.fillRect(x - 5, y - 12, 2, 2);
-    ctx.fillRect(x + 3, y - 12, 2, 2);
-
-    ctx.fillStyle = "#302a43";
-    ctx.fillRect(x - 7, y + 11, 5, 6);
-    ctx.fillRect(x + 3, y + 11, 5, 6);
-}
-
-
-function drawRoyalTreasureChest() {
-    if (currentRoom !== "royal" || !king) return;
-
-    const x = 320 - camera.x;
-    const y = 66 - camera.y;
-
-    const glow = ctx.createRadialGradient(x, y + 13, 8, x, y + 13, 82);
-    glow.addColorStop(0, "rgba(255, 205, 75, 0.34)");
-    glow.addColorStop(1, "rgba(255, 174, 40, 0)");
-
-    ctx.fillStyle = glow;
-    ctx.fillRect(x - 90, y - 65, 180, 145);
-
-    ctx.fillStyle = "#512b16";
-    ctx.fillRect(x - 49, y - 8, 98, 19);
-
-    ctx.fillStyle = "#b87522";
-    ctx.fillRect(x - 46, y - 18, 92, 20);
-
-    ctx.fillStyle = "#f4bd45";
-    ctx.fillRect(x - 42, y - 15, 84, 5);
-
-    ctx.fillStyle = "#704018";
-    ctx.fillRect(x - 54, y + 2, 108, 43);
-
-    ctx.fillStyle = "#c98228";
-    ctx.fillRect(x - 49, y + 5, 98, 35);
-
-    ctx.fillStyle = "#f5c34e";
-    ctx.fillRect(x - 49, y + 5, 98, 5);
-
-    ctx.fillStyle = "#f8d878";
-    ctx.fillRect(x - 35, y - 17, 8, 61);
-    ctx.fillRect(x + 27, y - 17, 8, 61);
-    ctx.fillRect(x - 7, y + 9, 14, 19);
-
-    ctx.fillStyle = "#fff0a6";
-    ctx.fillRect(x - 3, y + 13, 6, 7);
-
-    ctx.fillStyle = "#6b421e";
-    ctx.fillRect(x - 1, y + 20, 2, 5);
-
-    ctx.fillStyle = "#ffe49a";
-
-    for (const dx of [-43, 43]) {
-        ctx.fillRect(x + dx - 2, y + 10, 4, 4);
-        ctx.fillRect(x + dx - 2, y + 32, 4, 4);
-    }
-
-    if (!king.active && hasItem("kings_key")) {
-        ctx.save();
-        ctx.translate(x + 72, y + 25);
-        ctx.rotate(-0.35);
-
-        ctx.fillStyle = "#ffe36b";
-        ctx.fillRect(-3, -17, 6, 28);
-        ctx.fillRect(-8, -19, 16, 6);
-        ctx.fillRect(-8, -19, 5, 12);
-        ctx.fillRect(3, -19, 5, 12);
-        ctx.fillRect(1, 5, 8, 5);
-        ctx.fillRect(5, 10, 4, 6);
-
-        ctx.restore();
-    }
-}
-
-function drawEnemies() {
-    if (currentRoom === "royal") drawRoyalTreasureChest();
-
-    enemies.forEach(enemy => {
-        if (
-            enemy.active &&
-            !enemy.defeated &&
-            enemy.hp > 0 &&
-            enemy.room === currentRoom
-        ) {
-            drawCharacter(enemy.x, enemy.y, enemy.color, enemy.name);
-        }
-    });
-
-    if (
-        hunter.active &&
-        !hunter.defeated &&
-        hunter.hp > 0 &&
-        hunter.room === currentRoom
-    ) {
-        drawCharacter(hunter.x, hunter.y, hunter.color, hunter.name);
-    }
-
-    if (
-        sleepyGuard.active &&
-        !sleepyGuard.defeated &&
-        sleepyGuard.hp > 0 &&
-        sleepyGuard.room === currentRoom
-    ) {
-        drawCharacter(sleepyGuard.x, sleepyGuard.y, sleepyGuard.color, sleepyGuard.name);
-    }
-
-    if (
-        king.active &&
-        !king.defeated &&
-        king.hp > 0 &&
-        king.room === currentRoom
-    ) {
-        drawCharacter(king.x, king.y, king.color, king.name);
-    }
-}
-
-function drawPlayer() {
-    const x = player.x - camera.x;
-    const y = player.y - camera.y;
-
-    ctx.fillStyle = "#4a8ac7";
-    ctx.fillRect(x - 9, y - 5, 18, 17);
-
-    ctx.fillStyle = "#e8b68d";
-    ctx.fillRect(x - 8, y - 16, 16, 12);
-
-    ctx.fillStyle = "#392b27";
-    ctx.fillRect(x - 9, y - 18, 18, 5);
-
-    ctx.fillStyle = "#171321";
-    ctx.fillRect(x - 5, y - 12, 2, 2);
-    ctx.fillRect(x + 3, y - 12, 2, 2);
-
-    ctx.fillStyle = "#302a43";
-    ctx.fillRect(x - 7, y + 11, 5, 6);
-    ctx.fillRect(x + 3, y + 11, 5, 6);
 }
 
 // =====================================================
-// MINIMAP
-// =====================================================
-
-const miniMapLayout = {
-    barracks: { x: 0, y: 0, label: "BARR" },
-    library: { x: 1, y: 0, label: "LIB" },
-    garden: { x: 2, y: 0, label: "GARD" },
-    entrance: { x: 0, y: 1, label: "ENT" },
-    hall: { x: 1, y: 1, label: "HALL" },
-    royal: { x: 2, y: 1, label: "ROY" },
-    armory: { x: 0, y: 2, label: "ARM" },
-    dungeon: { x: 1, y: 2, label: "DUNG" },
-    exit: { x: 2, y: 2, label: "EXIT" }
-};
-
-const miniMapLinks = [
-    ["entrance", "hall"],
-    ["hall", "library"],
-    ["hall", "barracks"],
-    ["hall", "armory"],
-    ["hall", "royal"],
-    ["hall", "dungeon"],
-    ["hall", "garden"],
-    ["royal", "exit"]
-];
-
-function drawMiniMap() {
-    const panelX = 450;
-    const panelY = 10;
-    const panelW = 180;
-    const panelH = 130;
-
-    const startX = 465;
-    const startY = 39;
-    const gapX = 55;
-    const gapY = 32;
-
-    ctx.fillStyle = "rgba(12, 9, 20, 0.88)";
-    ctx.fillRect(panelX, panelY, panelW, panelH);
-
-    ctx.strokeStyle = "#d6b46b";
-    ctx.lineWidth = 2;
-    ctx.strokeRect(panelX, panelY, panelW, panelH);
-
-    ctx.fillStyle = "#ffcf77";
-    ctx.font = "10px monospace";
-    ctx.fillText("CASTLE MAP", panelX + 12, panelY + 17);
-
-    function getNodePosition(roomId) {
-        const node = miniMapLayout[roomId];
-
-        return {
-            x: startX + node.x * gapX,
-            y: startY + node.y * gapY
-        };
-    }
-
-    ctx.strokeStyle = "#82758d";
-    ctx.lineWidth = 2;
-
-    miniMapLinks.forEach(([a, b]) => {
-        if (!exploredRooms.includes(a) && !exploredRooms.includes(b)) return;
-
-        const p1 = getNodePosition(a);
-        const p2 = getNodePosition(b);
-
-        ctx.beginPath();
-        ctx.moveTo(p1.x, p1.y);
-        ctx.lineTo(p2.x, p2.y);
-        ctx.stroke();
-    });
-
-    Object.keys(miniMapLayout).forEach(roomId => {
-        const node = miniMapLayout[roomId];
-        const pos = getNodePosition(roomId);
-
-        const discovered = exploredRooms.includes(roomId);
-        const current = currentRoom === roomId;
-
-        ctx.fillStyle = current
-            ? "#ffcf77"
-            : discovered
-                ? "#66a9df"
-                : "#55505e";
-
-        ctx.fillRect(pos.x - 5, pos.y - 5, 10, 10);
-
-        ctx.fillStyle = current
-            ? "#ffcf77"
-            : discovered
-                ? "#ffffff"
-                : "#88818f";
-
-        ctx.font = "8px monospace";
-        ctx.fillText(node.label, pos.x - 15, pos.y + 13);
-    });
-}
-
-// =====================================================
-// INVENTORY DISPLAY
-// =====================================================
-
-function drawInventory() {
-    if (!inventoryOpen) return;
-
-    ctx.fillStyle = "rgba(0,0,0,0.9)";
-    ctx.fillRect(0, 0, W, H);
-
-    ctx.fillStyle = "#292334";
-    ctx.fillRect(55, 35, 530, 330);
-
-    ctx.strokeStyle = "#d6b46b";
-    ctx.lineWidth = 3;
-    ctx.strokeRect(55, 35, 530, 330);
-
-    ctx.fillStyle = "#ffcf77";
-    ctx.font = "20px monospace";
-    ctx.fillText("INVENTORY", 80, 70);
-
-    ctx.fillStyle = "white";
-    ctx.font = "13px monospace";
-
-    ctx.fillText(
-        "EQUIPPED: " + (itemInfo[equippedWeapon]?.name || "None"),
-        80, 110
-    );
-
-    inventory.forEach((item, i) => {
-        const selected = i === selectedInventoryIndex;
-        const equipped = item.id === equippedWeapon;
-
-        if (selected) {
-            ctx.fillStyle = "#51445a";
-            ctx.fillRect(75, 130 + i * 22, 470, 20);
-        }
-
-        ctx.fillStyle = selected
-            ? "#ffcf77"
-            : equipped
-                ? "#e5c16e"
-                : "white";
-
-        ctx.fillText(
-            (selected ? "> " : "  ") +
-            (itemInfo[item.id]?.name || item.id) +
-            " x" + item.qty,
-            85,
-            145 + i * 22
-        );
-    });
-
-    ctx.fillStyle = "#aaa";
-    ctx.font = "11px monospace";
-    ctx.fillText("LEFT / RIGHT / JOYSTICK = SELECT ITEM", 80, 326);
-    ctx.fillText("Z = USE / EQUIP SELECTED ITEM", 80, 341);
-    ctx.fillText("X / I / ESC = CLOSE", 80, 356);
-}
-
-// =====================================================
-// BATTLE DISPLAY
+// BATTLE DRAWING
 // =====================================================
 
 function drawBattle() {
-    if (!battleOpen) return;
+    const enemy = battle.enemy;
+    if (!enemy) return;
 
     ctx.fillStyle = "#100d18";
     ctx.fillRect(0, 0, W, H);
 
-    ctx.strokeStyle = "#e5c16e";
-    ctx.lineWidth = 3;
-    ctx.strokeRect(35, 25, 570, 350);
+    ctx.fillStyle = "#29213a";
+    ctx.fillRect(0, 0, W, 85);
 
-    const enemy = battle.enemy;
+    ctx.fillStyle = "#f2d28c";
+    ctx.font = "bold 19px monospace";
+    ctx.textAlign = "center";
+    ctx.fillText(enemy.name, W / 2, 32);
 
-    ctx.fillStyle = "white";
-    ctx.font = "18px monospace";
-    ctx.fillText(enemy.name, 65, 60);
-
-    ctx.fillStyle = "#542d35";
-    ctx.fillRect(65, 75, 250, 12);
-
-    ctx.fillStyle = "#e45b65";
-    ctx.fillRect(65, 75, 250 * (enemy.hp / enemy.maxHp), 12);
-
+    ctx.fillStyle = "#ddd";
     ctx.font = "12px monospace";
-    ctx.fillStyle = "white";
-    ctx.fillText("HP " + enemy.hp + " / " + enemy.maxHp, 330, 86);
-    ctx.fillText("PLAYER HP: " + player.hp + " / " + player.maxHp, 65, 115);
+    ctx.fillText(
+        "HP: " + enemy.hp + " / " + enemy.maxHp,
+        W / 2,
+        58
+    );
 
-    ctx.fillStyle = "#542d35";
-    ctx.fillRect(65, 125, 250, 10);
+    ctx.fillStyle = "#7c303b";
+    ctx.fillRect(120, 68, 280, 7);
 
-    ctx.fillStyle = "#62bd79";
-    ctx.fillRect(65, 125, 250 * (player.hp / player.maxHp), 10);
+    ctx.fillStyle = "#df5964";
+    ctx.fillRect(
+        120,
+        68,
+        280 * (enemy.hp / enemy.maxHp),
+        7
+    );
 
-    if (battle.phase === "menu") drawBattleMenu();
-    if (battle.phase === "aim") drawAimBar();
-    if (battle.phase === "dodge") drawDodgeArena();
-
-    if (battle.phase === "message") {
-        ctx.fillStyle = "white";
-        ctx.font = "13px monospace";
-        ctx.fillText(battle.message, 65, 220);
-
-        ctx.fillStyle = "#ffcf77";
-        ctx.font = "12px monospace";
-        ctx.fillText("PRESS ENTER TO CONTINUE", 185, 340);
+    if (battle.phase === "attack") {
+        drawAttackBar();
+    } else if (battle.phase === "dodge") {
+        drawDodgeArea();
+    } else {
+        drawBattleMenu();
     }
+
+    ctx.textAlign = "left";
 }
 
-// =====================================================
-// BATTLE MENU
-// =====================================================
-
 function drawBattleMenu() {
-    const options = getCurrentOptions();
+    ctx.fillStyle = "#1b1725";
+    ctx.fillRect(25, 110, W - 50, 230);
 
-    ctx.fillStyle = "white";
+    ctx.strokeStyle = "#e5c16e";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(25, 110, W - 50, 230);
+
+    ctx.fillStyle = "#fff";
     ctx.font = "13px monospace";
-    ctx.fillText(battle.message, 65, 185);
+    ctx.textAlign = "center";
 
-    const columns = Math.min(2, Math.max(1, options.length));
-    const startX = 70;
-    const startY = 220;
-    const buttonWidth = 230;
-    const buttonHeight = 30;
-    const columnGap = 250;
-    const rowGap = 38;
+    ctx.fillText(battle.message, W / 2, 145);
 
-    options.forEach((option, i) => {
-        const col = i % columns;
-        const row = Math.floor(i / columns);
+    const menu = getBattleMenu();
 
-        const x = startX + col * columnGap;
-        const y = startY + row * rowGap;
+    ctx.textAlign = "left";
+    ctx.font = "15px monospace";
 
-        ctx.strokeStyle = battle.selected === i ? "#ffcf77" : "#aaa";
-        ctx.lineWidth = 2;
-        ctx.strokeRect(x, y, buttonWidth, buttonHeight);
+    menu.forEach((option, index) => {
+        const x = 75;
+        const y = 190 + index * 34;
 
-        ctx.fillStyle = battle.selected === i ? "#ffcf77" : "white";
-        ctx.fillText(option, x + 12, y + 20);
+        ctx.fillStyle = index === battle.selected
+            ? "#f2d28c"
+            : "#eee";
+
+        ctx.fillText(
+            (index === battle.selected ? "▶ " : "  ") + option,
+            x,
+            y
+        );
     });
 
     ctx.fillStyle = "#aaa";
-    ctx.font = "10px monospace";
-    ctx.fillText("ESC = BACK", 470, 355);
-}
-
-// =====================================================
-// AIM BAR
-// =====================================================
-
-function drawAimBar() {
-    ctx.fillStyle = "white";
-    ctx.font = "13px monospace";
-    ctx.fillText("STOP THE MARKER NEAR THE CENTRE!", 130, 205);
-
-    const x = 190;
-    const y = 250;
-    const width = 260;
-
-    ctx.fillStyle = "#a84e4e";
-    ctx.fillRect(x, y, width, 22);
-
-    ctx.fillStyle = "#d7a94c";
-    ctx.fillRect(x + 55, y, 150, 22);
-
-    ctx.fillStyle = "#56b879";
-    ctx.fillRect(x + 105, y, 50, 22);
-
-    ctx.fillStyle = "white";
-    ctx.fillRect(x + battle.aimX - 2, y - 8, 4, 38);
-
-    ctx.fillStyle = "#aaa";
     ctx.font = "11px monospace";
-    ctx.fillText("ENTER TO ATTACK", 235, 310);
+    ctx.fillText(
+        "ARROWS = SELECT     ENTER = CONFIRM",
+        75,
+        320
+    );
 }
 
-// =====================================================
-// DODGE ARENA
-// =====================================================
+function drawAttackBar() {
+    ctx.fillStyle = "#201a2b";
+    ctx.fillRect(25, 130, W - 50, 170);
 
-function drawDodgeArena() {
-    const arena = battle.arena;
+    ctx.strokeStyle = "#e5c16e";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(70, 210, 380, 22);
 
-    ctx.fillStyle = "#201a2c";
-    ctx.fillRect(arena.x, arena.y, arena.w, arena.h);
+    ctx.fillStyle = "#3b8c6e";
+    ctx.fillRect(245, 210, 30, 22);
 
-    ctx.strokeStyle = "white";
-    ctx.lineWidth = 3;
-    ctx.strokeRect(arena.x, arena.y, arena.w, arena.h);
+    ctx.fillStyle = "#f0d28a";
+    ctx.fillRect(battle.aimX, 205, 5, 32);
 
-    ctx.fillStyle = "#ff5268";
-    ctx.beginPath();
-    ctx.arc(
-        battle.heart.x,
-        battle.heart.y,
-        battle.heart.size / 2,
-        0,
-        Math.PI * 2
+    ctx.fillStyle = "white";
+    ctx.font = "12px monospace";
+    ctx.textAlign = "center";
+
+    ctx.fillText(
+        "PRESS ENTER NEAR THE CENTRE!",
+        W / 2,
+        175
     );
-    ctx.fill();
 
-    ctx.fillStyle = "#f4f4f4";
+    ctx.fillText(
+        battle.message,
+        W / 2,
+        275
+    );
+}
+
+function drawDodgeArea() {
+    ctx.fillStyle = "#201a2b";
+    ctx.fillRect(25, 105, W - 50, 250);
+
+    ctx.strokeStyle = "#e5c16e";
+    ctx.lineWidth = 3;
+    ctx.strokeRect(55, 135, W - 110, 205);
+
+    ctx.fillStyle = "#f5e4e6";
 
     battle.bullets.forEach(bullet => {
         ctx.beginPath();
-        ctx.arc(bullet.x, bullet.y, bullet.radius, 0, Math.PI * 2);
+        ctx.arc(
+            bullet.x,
+            bullet.y,
+            bullet.size,
+            0,
+            Math.PI * 2
+        );
         ctx.fill();
     });
 
+    ctx.fillStyle = "#ff536c";
+    ctx.beginPath();
+    ctx.moveTo(battle.heart.x, battle.heart.y - 10);
+    ctx.lineTo(battle.heart.x - 9, battle.heart.y + 7);
+    ctx.lineTo(battle.heart.x + 9, battle.heart.y + 7);
+    ctx.closePath();
+    ctx.fill();
+
     ctx.fillStyle = "white";
     ctx.font = "11px monospace";
-    ctx.fillText("DODGE THE PROJECTILES!", 220, 350);
+    ctx.textAlign = "center";
+    ctx.fillText("DODGE THE PROJECTILES!", W / 2, 375);
 }
 
 // =====================================================
