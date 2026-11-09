@@ -1587,6 +1587,13 @@ function triggerGameOver() {
 }
 
 function retryCheckpoint() {
+
+    // RESET KING'S HP AFTER PLAYER DEFEAT
+    if (king && !king.defeated) {
+        king.hp = king.maxHp;
+        king.active = true;
+    }
+
     player.hp = checkpoint.hp;
     currentRoom = checkpoint.room;
 
