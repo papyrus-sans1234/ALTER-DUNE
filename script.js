@@ -2128,6 +2128,31 @@ function interact() {
         ) continue;
 
         if (distance(player, npc) < 55) {
+          if (
+    npc.name === "PRISONER" &&
+    currentRoom === "dungeon" &&
+    !prisonerRescued &&
+    king &&
+    king.hp <= 0
+) {
+    prisonerRescued = true;
+
+    npc.lines = [
+        "Thank you for coming back for me.",
+        "I knew someone would eventually stand up to the King.",
+        "Let's get out of this castle together."
+    ];
+
+    npc.line = 1;
+    saveGame();
+
+    showDialogue(
+        "PRISONER",
+        "You came back! The King is defeated, and I'm finally free. Let's leave this place together."
+    );
+
+    return;
+}
             const line = npc.lines[npc.line % npc.lines.length];
             npc.line++;
             showDialogue(npc.name, line);
@@ -2167,19 +2192,6 @@ function interact() {
         distance(player, { x: 320, y: 160 }) < 55
     ) {
         activateCheckpoint();
-        return;
-    }
-
-    if (
-        currentRoom === "dungeon" &&
-        distance(player, { x: 150, y: 180 }) < 60 &&
-        !prisonerRescued &&
-        king && king.hp <= 0
-    ) {
-        prisonerRescued = true;
-        saveGame();
-
-        startEnding("royal");
         return;
     }
 
