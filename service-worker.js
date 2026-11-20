@@ -1,5 +1,4 @@
-
-const CACHE_NAME = "alter-dune-v2";
+const CACHE_NAME = "alter-dune-v3";
 
 const FILES_TO_CACHE = [
     "./",
@@ -43,7 +42,7 @@ self.addEventListener("activate", event => {
     self.clients.claim();
 });
 
-// Load cached files when available
+// Try the network first, then use cached files offline
 self.addEventListener("fetch", event => {
     if (event.request.method !== "GET") return;
 
@@ -53,8 +52,29 @@ self.addEventListener("fetch", event => {
     if (url.origin !== self.location.origin) return;
 
     event.respondWith(
-        caches.match(event.request).then(cached => {
-            return cached || fetch(event.request);
-        })
+        fetch(event.request)
+            .then(response => {
+                if (response && response.ok) {
+                    const copy = response.clone();
+
+                    caches.open(CACHE_NAME).then(cache => {
+                        cache.put(event.request, copy);
+                    });
+                }
+
+                return response;
+            })
+            .catch(() => {
+                return caches.match(event.request).then(cached => {
+                    if (cached) return cached;
+
+                    return new Response("You are offline and this file is not cached.", {
+                        status: 503,
+                        headers: {
+                            "Content-Type": "text/plain"
+                        }
+                    });
+                });
+            })
     );
 });
