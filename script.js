@@ -3707,35 +3707,42 @@ function drawDodgeArea() {
         ctx.fill();
     });
 
-    // RED HEART SOUL
-    ctx.fillStyle = "#ff0000";
-    ctx.beginPath();
-
+        // ORIGINAL PLAYER SPRITE IN DODGE ARENA
     const hx = battle.heart.x;
     const hy = battle.heart.y;
 
-    ctx.moveTo(hx, hy + 9);
+    if (!adDrawSprite(
+        "player",
+        hx,
+        hy,
+        40,
+        48,
+        {
+            camera: false,
+            offset: 24
+        }
+    )) {
+        // Keep the original heart as a fallback
+        ctx.fillStyle = "#ff0000";
+        ctx.beginPath();
 
-    ctx.bezierCurveTo(
-        hx - 18, hy - 2,
-        hx - 13, hy - 17,
-        hx, hy - 8
-    );
+        ctx.moveTo(hx, hy + 9);
 
-    ctx.bezierCurveTo(
-        hx + 13, hy - 17,
-        hx + 18, hy - 2,
-        hx, hy + 9
-    );
+        ctx.bezierCurveTo(
+            hx - 18, hy - 2,
+            hx - 13, hy - 17,
+            hx, hy - 8
+        );
 
-    ctx.closePath();
-    ctx.fill();
+        ctx.bezierCurveTo(
+            hx + 13, hy - 17,
+            hx + 18, hy - 2,
+            hx, hy + 9
+        );
 
-    ctx.fillStyle = "white";
-    ctx.font = "11px monospace";
-    ctx.textAlign = "center";
-    ctx.fillText("DODGE THE PROJECTILES!", W / 2, 375);
-}
+        ctx.closePath();
+        ctx.fill();
+    }
 
 // =====================================================
 // RESTORED WORLD MOVEMENT AND RENDERING
