@@ -6,7 +6,6 @@
 
 
 const canvas = document.getElementById("gameCanvas");
-alert("NEW ALTER DUNE SCRIPT LOADED!");
 const ctx = canvas.getContext("2d");
 
 const menuScreen = document.getElementById("menuScreen");
@@ -4480,8 +4479,6 @@ updateLocation();
    All images are stored beside index.html and script.js.
    ========================================================= */
 
-alert("ALTER DUNE SPRITE CODE IS RUNNING!");
-
 // ---------------------------------------------------------
 // 1. LOAD SPRITES
 // ---------------------------------------------------------
@@ -4497,8 +4494,8 @@ const AD_SPRITE_FILES = {
     sleepy_guard: "Analysis output 5.png",
     librarian: "Analysis output 6.png",
     blacksmith: "Analysis output 7.png",
-    gardener: "Analysis output 8.png",
-    prisoner: "Analysis output 9.png",
+    gardener: "Analysis output 9.png",
+    prisoner: "Analysis output 8.png",
 
     guard: "Analysis output 10.png",
     warrior: "Analysis output 11.png",
