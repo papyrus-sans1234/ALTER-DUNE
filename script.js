@@ -6,6 +6,7 @@
 
 
 const canvas = document.getElementById("gameCanvas");
+alert("NEW ALTER DUNE SCRIPT LOADED!");
 const ctx = canvas.getContext("2d");
 
 const menuScreen = document.getElementById("menuScreen");
