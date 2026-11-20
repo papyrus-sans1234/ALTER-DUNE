@@ -4472,3 +4472,288 @@ ctx.imageSmoothingEnabled = false;
 resetEnemies();
 updateContinueButton();
 updateLocation();
+
+
+/* =========================================================
+   ALTER DUNE 2.2 — PNG SPRITE SYSTEM
+   All images are stored beside index.html and script.js.
+   ========================================================= */
+
+// ---------------------------------------------------------
+// 1. LOAD SPRITES
+// ---------------------------------------------------------
+
+const AD_SPRITES = {};
+
+const AD_SPRITE_FILES = {
+    player: "Analysis output 1.png",
+
+    worker: "Analysis output 2.png",
+    visitor: "Analysis output 3.png",
+    knight: "Analysis output 4.png",
+    sleepy_guard: "Analysis output 5.png",
+    librarian: "Analysis output 6.png",
+    blacksmith: "Analysis output 7.png",
+    gardener: "Analysis output 8.png",
+    prisoner: "Analysis output 9.png",
+
+    guard: "Analysis output 10.png",
+    warrior: "Analysis output 11.png",
+    king: "Analysis output 12.png"
+};
+
+for (const [name, filename] of Object.entries(AD_SPRITE_FILES)) {
+    const img = new Image();
+
+    img.onload = () => {
+        console.log("[SPRITES] Loaded:", filename);
+    };
+
+    img.onerror = () => {
+        console.error("[SPRITES] Failed to load:", filename);
+    };
+
+    // Files are in the repository root.
+    img.src = encodeURI("./" + filename);
+
+    AD_SPRITES[name] = img;
+}
+
+// ---------------------------------------------------------
+// 2. PRESERVE ORIGINAL DRAWING FUNCTIONS
+// ---------------------------------------------------------
+
+const AD_OLD_DRAW = {
+    player: drawPlayer,
+    npcs: drawNPCs,
+    guard: drawGuardCharacter,
+    hunter: drawHunterCharacter,
+    king: drawKingCharacter
+};
+
+// ---------------------------------------------------------
+// 3. GENERAL SPRITE DRAWER
+// ---------------------------------------------------------
+
+function adSpriteReady(name) {
+    const img = AD_SPRITES[name];
+
+    return !!(
+        img &&
+        img.complete &&
+        img.naturalWidth > 0
+    );
+}
+
+function adDrawSprite(name, x, y, width, height, options = {}) {
+    if (!adSpriteReady(name)) return false;
+
+    const img = AD_SPRITES[name];
+
+    const useCamera = options.camera !== false;
+
+    const screenX = useCamera ? x - camera.x : x;
+    const screenY = useCamera ? y - camera.y : y;
+
+    ctx.drawImage(
+        img,
+        screenX - width / 2,
+        screenY - height + (options.offset || 0),
+        width,
+        height
+    );
+
+    if (options.label) {
+        ctx.save();
+
+        ctx.fillStyle = options.labelColor || "white";
+        ctx.font = "10px monospace";
+        ctx.textAlign = "center";
+
+        ctx.fillText(
+            options.label,
+            screenX,
+            screenY - height - 3
+        );
+
+        ctx.restore();
+    }
+
+    return true;
+}
+
+// ---------------------------------------------------------
+// 4. PLAYER SPRITE
+// ---------------------------------------------------------
+
+drawPlayer = function () {
+    if (!adDrawSprite(
+        "player",
+        player.x,
+        player.y,
+        40,
+        48,
+        { offset: 17 }
+    )) {
+        AD_OLD_DRAW.player();
+    }
+};
+
+// ---------------------------------------------------------
+// 5. NPC SPRITES
+// ---------------------------------------------------------
+
+const AD_NPC_SPRITES = {
+    "CASTLE WORKER": "worker",
+    "EXCITED VISITOR": "visitor",
+    "OLD KNIGHT": "knight",
+    "SLEEPY GUARD": "sleepy_guard",
+    "LIBRARIAN": "librarian",
+    "BLACKSMITH": "blacksmith",
+    "PRISONER": "prisoner",
+    "GARDENER": "gardener"
+};
+
+drawNPCs = function () {
+    if (typeof npcs === "undefined") return;
+
+    const roomNPCs = npcs[currentRoom] || [];
+
+    // Keep the original drawings until every visible
+    // NPC sprite has loaded successfully.
+    const allLoaded = roomNPCs.every(npc => {
+        if (npc.hidden) return true;
+
+        const spriteName = AD_NPC_SPRITES[npc.name];
+
+        return spriteName && adSpriteReady(spriteName);
+    });
+
+    if (!allLoaded) {
+        AD_OLD_DRAW.npcs();
+        return;
+    }
+
+    roomNPCs.forEach(npc => {
+        if (npc.hidden) return;
+
+        const spriteName = AD_NPC_SPRITES[npc.name];
+
+        adDrawSprite(
+            spriteName,
+            npc.x,
+            npc.y,
+            38,
+            48,
+            {
+                camera: false,
+                offset: 15,
+                label: npc.name
+            }
+        );
+
+        if (Math.hypot(
+            player.x - npc.x,
+            player.y - npc.y
+        ) < 45) {
+            ctx.save();
+
+            ctx.fillStyle = "#ffe66d";
+            ctx.font = "12px monospace";
+            ctx.textAlign = "center";
+
+            ctx.fillText("!", npc.x, npc.y - 34);
+
+            ctx.restore();
+        }
+    });
+
+    // Rescued prisoner follower.
+    if (prisonerRescued && prisonerFollower.active) {
+        if (!adDrawSprite(
+            "prisoner",
+            prisonerFollower.x,
+            prisonerFollower.y,
+            38,
+            48,
+            {
+                offset: 17,
+                label: "PRISONER"
+            }
+        )) {
+            drawCharacter(
+                prisonerFollower.x,
+                prisonerFollower.y,
+                "#8caaa9",
+                "PRISONER"
+            );
+        }
+    }
+};
+
+// ---------------------------------------------------------
+// 6. GUARD SPRITE
+// ---------------------------------------------------------
+
+drawGuardCharacter = function (x, y, label) {
+    if (!adDrawSprite(
+        "guard",
+        x,
+        y,
+        44,
+        54,
+        {
+            offset: 21,
+            label: label
+        }
+    )) {
+        AD_OLD_DRAW.guard(x, y, label);
+    }
+};
+
+// ---------------------------------------------------------
+// 7. HUNTER / WARRIOR SPRITE
+// ---------------------------------------------------------
+
+drawHunterCharacter = function (x, y, label) {
+    if (!adDrawSprite(
+        "warrior",
+        x,
+        y,
+        48,
+        58,
+        {
+            offset: 22,
+            label: label,
+            labelColor: "#ffdb71"
+        }
+    )) {
+        AD_OLD_DRAW.hunter(x, y, label);
+    }
+};
+
+// ---------------------------------------------------------
+// 8. KING SPRITE
+// ---------------------------------------------------------
+
+drawKingCharacter = function (x, y, label) {
+    if (!adDrawSprite(
+        "king",
+        x,
+        y,
+        54,
+        62,
+        {
+            offset: 23,
+            label: label,
+            labelColor: "#ffdc76"
+        }
+    )) {
+        AD_OLD_DRAW.king(x, y, label);
+    }
+};
+
+console.log(
+    "%cALTER DUNE 2.2 — SPRITE SYSTEM READY",
+    "color: #d6a64b; font-weight: bold;"
+);
