@@ -3743,6 +3743,10 @@ function drawDodgeArea() {
         ctx.closePath();
         ctx.fill();
     }
+}
+
+// =====================================================
+// RESTORED WORLD MOVEMENT AND RENDERING
 
 // =====================================================
 // RESTORED WORLD MOVEMENT AND RENDERING
