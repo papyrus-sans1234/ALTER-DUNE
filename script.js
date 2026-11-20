@@ -4479,6 +4479,8 @@ updateLocation();
    All images are stored beside index.html and script.js.
    ========================================================= */
 
+alert("ALTER DUNE SPRITE CODE IS RUNNING!");
+
 // ---------------------------------------------------------
 // 1. LOAD SPRITES
 // ---------------------------------------------------------
