@@ -1,5 +1,14 @@
+/* =====================================================
+   ALTER DUNE - LOCAL FONT
+   ===================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+@font-face {
+    font-family: 'Press Start 2P';
+    src: url('./PressStart2P-Regular.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: block;
+}
 
 * {
     box-sizing: border-box;
@@ -373,7 +382,6 @@ footer {
         margin-top: 5px;
     }
 }
-
 
 /* =====================================================
    ALTER DUNE - MOBILE LANDSCAPE FIT
