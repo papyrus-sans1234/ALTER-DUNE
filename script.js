@@ -408,7 +408,8 @@ const itemInfo = {
     golden_coin: { name: "Golden Coin", type: "misc" },
     old_key: { name: "Old Key", type: "key" },
     kings_key: { name: "King's Key", type: "key" },
-    royal_treasure: { name: "Royal Treasure", type: "treasure" }
+    royal_treasure: { name: "Royal Treasure", type: "treasure" },
+    tnt: { name: "TNT", type: "misc" }
 };
 
 let inventory = [{ id: "wooden_sword", qty: 1 }];
@@ -615,7 +616,15 @@ const chests = {
     armory: [{ x: 15, y: 10, items: ["frying_pan"] }],
     dungeon: [{ x: 15, y: 10, items: ["apple", "old_key"] }],
     garden: [{ x: 10, y: 5, items: ["apple"] }],
-    royal: [{ x: 3, y: 10, items: ["bread"] }],
+    royal: [
+    { x: 3, y: 10, items: ["bread"] },
+    {
+        x: 15,
+        y: 10,
+        items: ["tnt"],
+        requiresKingDefeat: true
+    }
+],
     exit: []
 };
 
@@ -2276,18 +2285,22 @@ function interact() {
     }
 
     for (let i = 0; i < (chests[currentRoom] || []).length; i++) {
-        const chest = chests[currentRoom][i];
+    const chest = chests[currentRoom][i];
 
-        const pos = {
-            x: chest.x * TILE + 16,
-            y: chest.y * TILE + 16
-        };
-
-        if (distance(player, pos) < 45) {
-            openChest(i);
-            return;
-        }
+    if (chest.requiresKingDefeat && (!king || !king.defeated)) {
+        continue;
     }
+
+    const pos = {
+        x: chest.x * TILE + 16,
+        y: chest.y * TILE + 16
+    };
+
+    if (distance(player, pos) < 45) {
+        openChest(i);
+        return;
+    }
+}
 
     for (const object of furniture[currentRoom] || []) {
         const pos = {
@@ -2359,6 +2372,7 @@ function openChest(index) {
 
     chest.items.forEach(id => addItem(id));
     openedChests.push(chestId);
+	saveGame();
 
     showDialogue(
         "CHEST",
@@ -3932,6 +3946,9 @@ function drawFurniture() {
 
 function drawChests() {
     (chests[currentRoom] || []).forEach((chest, index) => {
+		if (chest.requiresKingDefeat && (!king || !king.defeated)) {
+        return;
+    }
         const x = chest.x * TILE - camera.x;
         const y = chest.y * TILE - camera.y;
 
