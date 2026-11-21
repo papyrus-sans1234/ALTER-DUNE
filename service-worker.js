@@ -1,4 +1,4 @@
-const CACHE_NAME = "alter-dune-v3";
+const CACHE_NAME = "alter-dune-v4";
 
 const FILES_TO_CACHE = [
     "./",
@@ -9,11 +9,11 @@ const FILES_TO_CACHE = [
     "./icon.png",
 
     // Soundtracks
-    "./FINALBOSS.mp3",
-    "./THEHUNTER.mp3",
-    "./EXPLORATION.mp3",
-    "./START MENU.mp3",
-    "./FIGHT.mp3"
+    "./ALTER_DUNE_THE_IRON_CROWN.mp3",
+    "./ALTER_DUNE_BONES_OF_THE_FALLEN_TRUMPET_MIX.mp3",
+    "./ALTER_DUNE_MEDIEVAL_EXPLORATION.mp3",
+    "./alter_dune_start_menu_mystery.mp3",
+    "./ALTER_DUNE_ORIGINAL_TRUMPET_BOSS.mp3"
 ];
 
 // Install and cache game files
