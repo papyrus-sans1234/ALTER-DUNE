@@ -54,11 +54,11 @@ let player = {
 // =====================================
 
 const musicTracks = {
-    menu: new Audio("./START%20MENU.mp3"),
-    exploration: new Audio("./EXPLORATION.mp3"),
-    fight: new Audio("./FIGHT.mp3"),
-    hunter: new Audio("./THEHUNTER.mp3"),
-    king: new Audio("./FINALBOSS.mp3")
+    menu: new Audio("./alter_dune_start_menu_mystery.mp3"),
+    exploration: new Audio("./ALTER_DUNE_MEDIEVAL_EXPLORATION.mp3"),
+    fight: new Audio("./ALTER_DUNE_ORIGINAL_CHIPTUNE_BOSS.mp3"),
+    hunter: new Audio("./ALTER_DUNE_BONES_OF_THE_FALLEN_TRUMPET_MIX.mp3"),
+    king: new Audio("./ALTER_DUNE_THE_IRON_CROWN.mp3")
 };
 
 let currentMusic = null;
