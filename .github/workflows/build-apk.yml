@@ -1,0 +1,224 @@
+name: Build ALTER DUNE Standalone APK
+
+on:
+  workflow_dispatch:
+  push:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: 8.9
+
+      - name: Create Android project
+        shell: bash
+        run: |
+          ANDROID_DIR="$RUNNER_TEMP/alter-dune-android"
+
+          mkdir -p "$ANDROID_DIR/app/src/main/assets/www"
+          mkdir -p "$ANDROID_DIR/app/src/main/java/com/alterdune/standalone"
+
+          if [ ! -f index.html ]; then
+            echo "::error::index.html is missing from repository root."
+            exit 1
+          fi
+
+          rsync -a \
+            --exclude='.git/' \
+            --exclude='.github/' \
+            --exclude='README.md' \
+            ./ "$ANDROID_DIR/app/src/main/assets/www/"
+
+          cat > "$ANDROID_DIR/settings.gradle" <<'EOF'
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+
+          rootProject.name = "AlterDune"
+          include(":app")
+          EOF
+
+          cat > "$ANDROID_DIR/build.gradle" <<'EOF'
+          plugins {
+              id 'com.android.application' version '8.7.3' apply false
+          }
+          EOF
+
+          cat > "$ANDROID_DIR/app/build.gradle" <<'EOF'
+          plugins {
+              id 'com.android.application'
+          }
+
+          android {
+              namespace 'com.alterdune.standalone'
+              compileSdk 35
+
+              defaultConfig {
+                  applicationId 'com.alterdune.standalone'
+                  minSdk 23
+                  targetSdk 35
+                  versionCode 1
+                  versionName '1.0'
+              }
+          }
+
+          dependencies {
+              implementation 'androidx.webkit:webkit:1.12.1'
+          }
+          EOF
+
+          cat > "$ANDROID_DIR/app/src/main/AndroidManifest.xml" <<'EOF'
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+              <application
+                  android:allowBackup="false"
+                  android:label="ALTER DUNE"
+                  android:theme="@android:style/Theme.Material.Light.NoActionBar">
+
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true"
+                      android:screenOrientation="landscape"
+                      android:configChanges="orientation|screenSize|keyboardHidden">
+
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+
+          cat > "$ANDROID_DIR/app/src/main/java/com/alterdune/standalone/MainActivity.kt" <<'EOF'
+          package com.alterdune.standalone
+
+          import android.app.Activity
+          import android.os.Bundle
+          import android.view.View
+          import android.webkit.WebChromeClient
+          import android.webkit.WebResourceRequest
+          import android.webkit.WebResourceResponse
+          import android.webkit.WebView
+          import android.net.Uri
+          import androidx.webkit.WebViewAssetLoader
+          import androidx.webkit.WebViewClientCompat
+
+          class MainActivity : Activity() {
+
+              private lateinit var gameView: WebView
+
+              override fun onCreate(savedInstanceState: Bundle?) {
+                  super.onCreate(savedInstanceState)
+
+                  hideSystemBars()
+
+                  gameView = WebView(this)
+
+                  gameView.settings.javaScriptEnabled = true
+                  gameView.settings.domStorageEnabled = true
+                  gameView.settings.mediaPlaybackRequiresUserGesture = true
+                  gameView.settings.allowFileAccess = false
+                  gameView.settings.allowContentAccess = false
+
+                  gameView.webChromeClient = WebChromeClient()
+
+                  val assetLoader = WebViewAssetLoader.Builder()
+                      .addPathHandler(
+                          "/assets/",
+                          WebViewAssetLoader.AssetsPathHandler(this)
+                      )
+                      .build()
+
+                  gameView.webViewClient = object : WebViewClientCompat() {
+
+                      override fun shouldInterceptRequest(
+                          view: WebView,
+                          request: WebResourceRequest
+                      ): WebResourceResponse? {
+                          return assetLoader.shouldInterceptRequest(request.url)
+                      }
+
+                      @Suppress("DEPRECATION")
+                      override fun shouldInterceptRequest(
+                          view: WebView,
+                          url: String
+                      ): WebResourceResponse? {
+                          return assetLoader.shouldInterceptRequest(Uri.parse(url))
+                      }
+                  }
+
+                  setContentView(gameView)
+
+                  gameView.loadUrl(
+                      "https://appassets.androidplatform.net/assets/www/index.html"
+                  )
+              }
+
+              private fun hideSystemBars() {
+                  window.decorView.systemUiVisibility = (
+                      View.SYSTEM_UI_FLAG_FULLSCREEN
+                      or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                      or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                      or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                      or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                      or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                  )
+              }
+
+              override fun onWindowFocusChanged(hasFocus: Boolean) {
+                  super.onWindowFocusChanged(hasFocus)
+                  if (hasFocus) hideSystemBars()
+              }
+
+              @Deprecated("Deprecated in Android")
+              override fun onBackPressed() {
+                  if (this::gameView.isInitialized && gameView.canGoBack()) {
+                      gameView.goBack()
+                  } else {
+                      super.onBackPressed()
+                  }
+              }
+          }
+          EOF
+
+      - name: Build APK
+        working-directory: ${{ runner.temp }}/alter-dune-android
+        run: gradle --no-daemon assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ALTER-DUNE-Standalone-APK
+          path: ${{ runner.temp }}/alter-dune-android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
