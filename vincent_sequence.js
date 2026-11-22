@@ -1087,3 +1087,203 @@ console.log(
 console.log(
     "VINCENT BATTLE: HARDER ATTACKS ENABLED"
 );
+
+
+
+/* =====================================================
+   ALTER DUNE — VOID EXIT & GENOCIDE ENDING
+   ===================================================== */
+
+const AD_GENOCIDE = {
+    active: false,
+    complete: localStorage.getItem("adGenocideComplete") === "true",
+    doorX: 10,
+    doorY: 2
+};
+
+// -----------------------------------------------------
+// SYNTHESIZED VINCENT LAUGH
+// -----------------------------------------------------
+
+function adPlayVincentLaugh() {
+    try {
+        const AudioContextClass =
+            window.AudioContext || window.webkitAudioContext;
+
+        if (!AudioContextClass) return;
+
+        const audio = new AudioContextClass();
+        const now = audio.currentTime;
+
+        const notes = [
+            [110, 0],
+            [82, 0.35],
+            [98, 0.7],
+            [65, 1.05],
+            [73, 1.4]
+        ];
+
+        for (const [frequency, delay] of notes) {
+            const oscillator = audio.createOscillator();
+            const gain = audio.createGain();
+
+            oscillator.type = "sawtooth";
+            oscillator.frequency.setValueAtTime(
+                frequency,
+                now + delay
+            );
+
+            gain.gain.setValueAtTime(0, now + delay);
+            gain.gain.linearRampToValueAtTime(
+                0.16,
+                now + delay + 0.08
+            );
+            gain.gain.exponentialRampToValueAtTime(
+                0.001,
+                now + delay + 0.65
+            );
+
+            oscillator.connect(gain);
+            gain.connect(audio.destination);
+
+            oscillator.start(now + delay);
+            oscillator.stop(now + delay + 0.7);
+        }
+
+    } catch (error) {
+        console.warn("Vincent laugh could not play:", error);
+    }
+}
+
+// -----------------------------------------------------
+// DRAW VOID DOOR
+// -----------------------------------------------------
+
+const AD_OLD_DRAW_DESTROYED_CASTLE = drawDestroyedCastle;
+
+drawDestroyedCastle = function () {
+    AD_OLD_DRAW_DESTROYED_CASTLE();
+
+    const x = AD_GENOCIDE.doorX * TILE - camera.x;
+    const y = AD_GENOCIDE.doorY * TILE - camera.y;
+
+    const unlocked =
+        localStorage.getItem("adVincentDefeated") === "true";
+
+    ctx.fillStyle = unlocked ? "#321b42" : "#17121f";
+    ctx.fillRect(x, y, 32, 32);
+
+    ctx.strokeStyle = unlocked ? "#c77dff" : "#51445a";
+    ctx.lineWidth = 3;
+    ctx.strokeRect(x, y, 32, 32);
+
+    ctx.fillStyle = unlocked ? "#e8baff" : "#77707f";
+    ctx.fillRect(x + 23, y + 15, 4, 4);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "10px monospace";
+    ctx.textAlign = "center";
+    ctx.fillText(
+        unlocked ? "EXIT" : "LOCKED",
+        x + 16,
+        y - 5
+    );
+    ctx.textAlign = "left";
+};
+
+// -----------------------------------------------------
+// GENOCIDE ENDING
+// -----------------------------------------------------
+
+function adStartGenocideEnding() {
+    if (AD_GENOCIDE.active || AD_GENOCIDE.complete) return;
+
+    AD_GENOCIDE.active = true;
+    endingStarted = true;
+
+    localStorage.setItem("adGenocideComplete", "true");
+
+    paused = true;
+    battleOpen = false;
+    dialogueOpen = false;
+    inventoryOpen = false;
+    gameOver = false;
+    keys = {};
+
+    adPlayVincentLaugh();
+}
+
+// -----------------------------------------------------
+// VOID DOOR INTERACTION
+// -----------------------------------------------------
+
+const AD_OLD_INTERACT_VOID = interact;
+
+interact = function () {
+    if (castleDestroyed) {
+        const playerCenterX = player.x + player.width / 2;
+        const playerCenterY = player.y + player.height / 2;
+
+        const doorCenterX =
+            AD_GENOCIDE.doorX * TILE + TILE / 2;
+
+        const doorCenterY =
+            AD_GENOCIDE.doorY * TILE + TILE / 2;
+
+        const distance = Math.hypot(
+            playerCenterX - doorCenterX,
+            playerCenterY - doorCenterY
+        );
+
+        if (distance < 55) {
+            if (
+                localStorage.getItem("adVincentDefeated") !== "true"
+            ) {
+                showDialogue(
+                    "THE VOID",
+                    "The door refuses to open."
+                );
+                return;
+            }
+
+            adStartGenocideEnding();
+            return;
+        }
+
+        showDialogue(
+            "THE VOID",
+            "There is nothing left here."
+        );
+        return;
+    }
+
+    AD_OLD_INTERACT_VOID();
+};
+
+// -----------------------------------------------------
+// PERSISTENT ENDING SCREEN
+// -----------------------------------------------------
+
+const AD_OLD_DRAW_ENDING = drawEnding;
+
+drawEnding = function () {
+    if (!AD_GENOCIDE.active) {
+        AD_OLD_DRAW_ENDING();
+        return;
+    }
+
+    ctx.fillStyle = "#000000";
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.fillStyle = "#8b0000";
+    ctx.font = "bold 28px monospace";
+    ctx.textAlign = "center";
+    ctx.fillText("...", W / 2, H / 2 - 20);
+
+    ctx.fillStyle = "#777777";
+    ctx.font = "16px monospace";
+    ctx.fillText("...", W / 2, H / 2 + 20);
+
+    ctx.textAlign = "left";
+};
+
