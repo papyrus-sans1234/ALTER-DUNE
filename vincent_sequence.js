@@ -961,40 +961,62 @@ startNewGame = function () {
 };
 
 
+
 // =====================================================
-// 21. RESUME VINCENT AFTER PAGE RELOAD — FIXED
+// 21. RESUME VINCENT AFTER SAVE LOAD — ACTUAL FIX
 // =====================================================
 
-if (
-    castleDestroyed &&
-    localStorage.getItem("adVincentDefeated") !== "true"
-) {
+// The old resume check ran too early:
+// castleDestroyed had not been restored yet.
+//
+// Instead, wait until loadGame() has finished.
+
+const AD_VINCENT_OLD_LOAD_GAME = loadGame;
+
+loadGame = function () {
+
+    // Load the player's actual save first.
+    AD_VINCENT_OLD_LOAD_GAME();
+
+    // Only resume if the castle was destroyed
+    // and Vincent has not already been defeated.
+    if (
+        !castleDestroyed ||
+        localStorage.getItem("adVincentDefeated") === "true"
+    ) {
+        return;
+    }
+
+    // Restore Vincent's appearance scene.
     AD_VINCENT.active = true;
     AD_VINCENT.mode = "story";
-
-    // Resume at Vincent's appearance, not the empty void.
     AD_VINCENT.line = 12;
 
     AD_VINCENT.bossHP = AD_VINCENT.bossMaxHP;
     AD_VINCENT.enemy = createVincentEnemy();
 
+    AD_VINCENT.defeated = false;
+    AD_VINCENT.failed = false;
     AD_VINCENT.soundtrackStarted = false;
 
-    // Make sure the game can draw and accept input.
+    // Restore the encounter's rendering and controls.
+    currentRoom = "hall";
+
     paused = false;
     battleOpen = false;
     dialogueOpen = false;
     inventoryOpen = false;
 
+    gameOver = false;
     keys = {};
 
-    // Ensure the player is in the intended encounter room.
-    currentRoom = "hall";
+    updateLocation();
 
     console.log(
-        "VINCENT RESUMED: APPEARANCE SCENE"
+        "VINCENT SAVE RECOVERED: APPEARANCE SCENE"
     );
-}
+};
+
 
 
 
