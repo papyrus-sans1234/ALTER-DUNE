@@ -614,8 +614,8 @@ const chests = {
     royal: [
     { x: 3, y: 10, items: ["bread"] },
     {
-        x: 15,
-        y: 10,
+        x: 18,
+        y: 12,
         items: ["tnt","medkit"],
         requiresKingDefeat: true
     }
