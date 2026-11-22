@@ -605,19 +605,19 @@ const furnitureInfo = {
 // =====================================================
 
 const chests = {
-    entrance: [{ x: 15, y: 10, items: ["toy_knife", "bread"] }],
-    hall: [{ x: 3, y: 2, items: ["bread"] }],
+    entrance: [{ x: 15, y: 10, items: ["toy_knife", "medkit"] }],
+    hall: [{ x: 3, y: 2, items: ["bread","medkit"] }],
     barracks: [{ x: 10, y: 5, items: ["bread", "golden_coin"] }],
     library: [{ x: 15, y: 11, items: ["golden_coin", "medkit"] }],
-    armory: [{ x: 15, y: 10, items: ["frying_pan"] }],
+    armory: [{ x: 15, y: 10, items: ["frying_pan","medkit"] }],
     dungeon: [{ x: 15, y: 10, items: ["apple", "old_key"] }],
-    garden: [{ x: 10, y: 5, items: ["apple"] }],
+    garden: [{ x: 5, y: 3, items: ["apple","golden_coin"] }],
     royal: [
     { x: 3, y: 10, items: ["bread"] },
     {
         x: 15,
         y: 10,
-        items: ["tnt"],
+        items: ["tnt","medkit"],
         requiresKingDefeat: true
     }
 ],
