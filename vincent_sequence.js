@@ -32,6 +32,25 @@ if (!musicTracks.vincent) {
 
 
 // =====================================================
+// VINCENT'S EXCLUSIVE BATTLE MUSIC
+// =====================================================
+
+const AD_VINCENT_OLD_UPDATE_BATTLE_MUSIC =
+    updateBattleMusic;
+
+updateBattleMusic = function (enemy) {
+
+    if (enemy?.id === "vincent") {
+        playMusic("vincent");
+        return;
+    }
+
+    AD_VINCENT_OLD_UPDATE_BATTLE_MUSIC(enemy);
+};
+
+
+
+// =====================================================
 // 2. VINCENT STATE
 // =====================================================
 
