@@ -735,9 +735,13 @@ handleEnemyDefeat = function (enemy) {
     finishBattle(true);
 
     showDialogue(
-        "VINCENT",
-        "Well... that was entertaining. We shall meet again."
-    );
+    "VINCENT",
+    "Well... that was entertaining. We shall meet again."
+);
+
+setTimeout(() => {
+    adStartGenocideEnding();
+}, 3000);
 };
 
 
