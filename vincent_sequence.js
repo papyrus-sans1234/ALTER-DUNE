@@ -59,8 +59,8 @@ const AD_VINCENT = {
     mode: "story",
     line: 0,
 
-    bossHP: 360,
-    bossMaxHP: 360,
+    bossHP: 500,
+    bossMaxHP: 500,
 
     defeated: false,
     failed: false,
@@ -176,7 +176,7 @@ function createVincentEnemy() {
         hp: AD_VINCENT.bossMaxHP,
         maxHp: AD_VINCENT.bossMaxHP,
 
-        damage: 6,
+        damage: 3,
         color: "#a7a7b5",
         difficulty: 3,
 
@@ -736,7 +736,7 @@ handleEnemyDefeat = function (enemy) {
 
     showDialogue(
     "VINCENT",
-    "Well... that was entertaining. We shall meet again."
+    "Well... that was entertaining. We shall meet again. You know that I'll return everytime you reset"
 );
 
 setTimeout(() => {
