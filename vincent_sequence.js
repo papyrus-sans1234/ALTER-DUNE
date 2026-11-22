@@ -2,14 +2,13 @@
 /* =====================================================
    ALTER DUNE — VINCENT SEQUENCE
    Grand Hall TNT Event + Original Battle Engine
+   HARDER VINCENT BATTLE EDITION
 
    Requires:
    - script.js (loaded FIRST)
    - vincentsprite.png
    - Analysis output 1.png (loaded by script.js)
    - VINCENT.mp3
-
-   Vincent uses the ORIGINAL ALTER DUNE battle system.
    ===================================================== */
 
 
@@ -170,7 +169,8 @@ function createVincentEnemy() {
         fleeGrace: 0,
         alerted: true,
 
-        phaseNumber: 1
+        phaseNumber: 1,
+        attackCount: 0
     };
 }
 
@@ -216,7 +216,6 @@ function startVincentSequence() {
         return;
     }
 
-    // Save the checkpoint BEFORE the explosion.
     saveVincentCheckpoint();
 
     AD_VINCENT.active = true;
@@ -287,9 +286,7 @@ document.addEventListener("keydown", function (e) {
 
     AD_VINCENT.line++;
 
-    // -----------------------------------------------
     // TNT EXPLOSION
-    // -----------------------------------------------
 
     if (
         AD_VINCENT.line === 5 &&
@@ -303,9 +300,7 @@ document.addEventListener("keydown", function (e) {
         updateLocation();
     }
 
-    // -----------------------------------------------
-    // STORY COMPLETE: START ORIGINAL BATTLE
-    // -----------------------------------------------
+    // START ORIGINAL BATTLE
 
     if (
         AD_VINCENT.line >= AD_VINCENT_STORY.length
@@ -316,10 +311,8 @@ document.addEventListener("keydown", function (e) {
 
         paused = false;
 
-        // Use the original ALTER DUNE battle engine.
         startBattle(AD_VINCENT.enemy);
 
-        // Replace the normal fight soundtrack.
         playMusic("vincent");
 
         AD_VINCENT.soundtrackStarted = true;
@@ -328,7 +321,7 @@ document.addEventListener("keydown", function (e) {
 
 
 // =====================================================
-// 9. VINCENT'S CUSTOM PROJECTILE PATTERNS
+// 9. VINCENT'S HARDER ATTACK SYSTEM
 // =====================================================
 
 const AD_VINCENT_OLD_CREATE_ENEMY_ATTACK =
@@ -339,7 +332,10 @@ createEnemyAttack = function (enemy) {
         return AD_VINCENT_OLD_CREATE_ENEMY_ATTACK(enemy);
     }
 
-    const pattern = battle.turn % 4;
+    // Count every attack so the pattern sequence advances.
+    enemy.attackCount = (enemy.attackCount || 0) + 1;
+
+    // THREE PHASES
 
     const phase =
         enemy.hp <= 120 ? 3 :
@@ -347,18 +343,41 @@ createEnemyAttack = function (enemy) {
 
     enemy.phaseNumber = phase;
 
-    const speedMultiplier =
-        1 + (phase - 1) * 0.35;
+    // Each phase gets faster.
+    const speedMultiplier = [
+        1,
+        1.30,
+        1.65
+    ][phase - 1];
 
+    // Six different patterns.
+    const pattern = (enemy.attackCount - 1) % 6;
+
+    const centerX = W / 2;
+    const centerY = 85;
+
+    const speed = (value) =>
+        value * speedMultiplier;
+
+
+    // -------------------------------------------------
     // PATTERN 0: COSMIC RAIN
+    // A wider, faster shower of projectiles.
+    // -------------------------------------------------
 
     if (pattern === 0) {
-        for (let i = 0; i < 8; i++) {
+        const count = phase === 1 ? 9 : phase === 2 ? 11 : 13;
+
+        for (let i = 0; i < count; i++) {
+            const x = 45 + i * ((W - 90) / (count - 1));
+
+            const delayOffset = (i % 2) * 12;
+
             spawnProjectile(
-                65 + i * 55,
-                75,
+                x,
+                65 + delayOffset,
                 0,
-                (2.5 + phase * 0.45) * speedMultiplier,
+                speed(3.0 + (i % 3) * 0.35),
                 9
             );
         }
@@ -366,22 +385,36 @@ createEnemyAttack = function (enemy) {
         return;
     }
 
-    // PATTERN 1: AWARENESS
+
+    // -------------------------------------------------
+    // PATTERN 1: HYPER AWARENESS
+    // A wider aimed spread.
+    // -------------------------------------------------
 
     if (pattern === 1) {
         const angle = Math.atan2(
-            battle.heart.y - 85,
-            battle.heart.x - W / 2
+            battle.heart.y - centerY,
+            battle.heart.x - centerX
         );
 
-        for (let i = -2; i <= 2; i++) {
-            const shotAngle = angle + i * 0.2;
+        const spreadCount = phase === 1 ? 5 : phase === 2 ? 7 : 9;
+
+        const spread = phase === 3 ? 0.15 : 0.19;
+
+        for (let i = 0; i < spreadCount; i++) {
+            const offset = i - (spreadCount - 1) / 2;
+
+            const shotAngle = angle + offset * spread;
+
+            const projectileSpeed = speed(
+                phase === 3 ? 4.6 : 3.7
+            );
 
             spawnProjectile(
-                W / 2,
-                85,
-                Math.cos(shotAngle) * 3.2 * speedMultiplier,
-                Math.sin(shotAngle) * 3.2 * speedMultiplier,
+                centerX,
+                centerY,
+                Math.cos(shotAngle) * projectileSpeed,
+                Math.sin(shotAngle) * projectileSpeed,
                 9
             );
         }
@@ -389,38 +422,154 @@ createEnemyAttack = function (enemy) {
         return;
     }
 
+
+    // -------------------------------------------------
     // PATTERN 2: VOID WALL
+    // Two waves with shifting safe gaps.
+    // -------------------------------------------------
 
     if (pattern === 2) {
-        const gap = Math.floor(Math.random() * 8);
+        const columns = 10;
 
-        for (let i = 0; i < 8; i++) {
-            if (i === gap) continue;
+        const gapOne = enemy.attackCount % columns;
+        const gapTwo = (gapOne + 4) % columns;
+
+        for (let i = 0; i < columns; i++) {
+            if (i !== gapOne) {
+                spawnProjectile(
+                    45 + i * ((W - 90) / (columns - 1)),
+                    65,
+                    0,
+                    speed(3.3),
+                    9
+                );
+            }
+
+            if (
+                phase >= 2 &&
+                i !== gapTwo
+            ) {
+                spawnProjectile(
+                    45 + i * ((W - 90) / (columns - 1)),
+                    45,
+                    0,
+                    speed(3.8),
+                    9
+                );
+            }
+        }
+
+        return;
+    }
+
+
+    // -------------------------------------------------
+    // PATTERN 3: HYPER COSMIC BURST
+    // A radial burst from the centre.
+    // -------------------------------------------------
+
+    if (pattern === 3) {
+        const count = phase === 1 ? 12 : phase === 2 ? 16 : 20;
+
+        for (let i = 0; i < count; i++) {
+            const angle =
+                (Math.PI * 2 * i) / count;
+
+            const projectileSpeed = speed(
+                phase === 3 ? 4.2 : 3.3
+            );
 
             spawnProjectile(
-                65 + i * 55,
-                75,
-                0,
-                3.1 * speedMultiplier,
-                10
+                centerX,
+                165,
+                Math.cos(angle) * projectileSpeed,
+                Math.sin(angle) * projectileSpeed,
+                8
             );
         }
 
         return;
     }
 
-    // PATTERN 3: HYPER COSMIC BURST
 
-    for (let i = 0; i < 10; i++) {
-        const angle = (Math.PI * 2 * i) / 10;
+    // -------------------------------------------------
+    // PATTERN 4: REALITY CROSSOVER
+    // Projectiles approach from both sides.
+    // -------------------------------------------------
 
-        spawnProjectile(
-            W / 2,
-            170,
-            Math.cos(angle) * 3.2 * speedMultiplier,
-            Math.sin(angle) * 3.2 * speedMultiplier,
-            8
+    if (pattern === 4) {
+        const rows = phase === 1 ? 5 : phase === 2 ? 7 : 9;
+
+        for (let i = 0; i < rows; i++) {
+            const y = 65 + i * 23;
+
+            // Left side
+            spawnProjectile(
+                45,
+                y,
+                speed(3.0),
+                speed(0.15 * (i - rows / 2)),
+                9
+            );
+
+            // Right side
+            spawnProjectile(
+                W - 45,
+                y,
+                -speed(3.0),
+                speed(0.15 * (rows / 2 - i)),
+                9
+            );
+        }
+
+        return;
+    }
+
+
+    // -------------------------------------------------
+    // PATTERN 5: HE KNOWS EVERYTHING
+    // Aimed spread followed by a falling wave.
+    // -------------------------------------------------
+
+    if (pattern === 5) {
+        const angle = Math.atan2(
+            battle.heart.y - 85,
+            battle.heart.x - centerX
         );
+
+        const fanCount = phase === 1 ? 5 : phase === 2 ? 7 : 9;
+
+        for (let i = 0; i < fanCount; i++) {
+            const offset =
+                i - (fanCount - 1) / 2;
+
+            const shotAngle = angle + offset * 0.16;
+
+            spawnProjectile(
+                centerX,
+                85,
+                Math.cos(shotAngle) * speed(4.0),
+                Math.sin(shotAngle) * speed(4.0),
+                9
+            );
+        }
+
+        const rainCount = phase === 1 ? 5 : phase === 2 ? 7 : 9;
+
+        for (let i = 0; i < rainCount; i++) {
+            const x =
+                55 + i * ((W - 110) / (rainCount - 1));
+
+            spawnProjectile(
+                x,
+                55,
+                0,
+                speed(3.2 + (i % 2) * 0.5),
+                8
+            );
+        }
+
+        return;
     }
 };
 
@@ -520,7 +669,6 @@ handleEnemyDefeat = function (enemy) {
         "true"
     );
 
-    // Use the original battle-ending system.
     finishBattle(true);
 
     showDialogue(
@@ -563,7 +711,6 @@ function drawVincentSprite(x, y, width, height) {
 const AD_VINCENT_OLD_DRAW_BATTLE = drawBattle;
 
 drawBattle = function () {
-    // Draw the complete original battle screen first.
     AD_VINCENT_OLD_DRAW_BATTLE();
 
     if (
@@ -573,7 +720,6 @@ drawBattle = function () {
         return;
     }
 
-    // Draw Vincent on top of the original battle screen.
     drawVincentSprite(
         W - 55,
         88,
@@ -617,13 +763,11 @@ function drawVincentStory() {
     ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, W, H);
 
-    // EXPLOSION FLASH
     if (AD_VINCENT.line === 5) {
         ctx.fillStyle = "#fff";
         ctx.fillRect(0, 0, W, H);
     }
 
-    // EMPTY VOID
     if (
         AD_VINCENT.line >= 6 &&
         AD_VINCENT.line <= 11
@@ -632,7 +776,6 @@ function drawVincentStory() {
         ctx.fillRect(0, 0, W, H);
     }
 
-    // VINCENT APPEARS
     if (AD_VINCENT.line >= 12) {
         ctx.fillStyle = "#050509";
         ctx.fillRect(0, 0, W, H);
@@ -650,7 +793,6 @@ function drawVincentStory() {
         }
     }
 
-    // DIALOGUE BOX
     ctx.fillStyle = "#080808";
     ctx.fillRect(15, H - 105, W - 30, 90);
 
@@ -721,15 +863,12 @@ triggerGameOver = function () {
         AD_VINCENT.active = false;
         AD_VINCENT.mode = "gameover";
 
-        // Restore the castle.
         castleDestroyed = false;
 
-        // Return TNT so the event can be attempted again.
         if (!hasItem("tnt")) {
             addItem("tnt");
         }
 
-        // Preserve the Grand Hall checkpoint.
         checkpoint = {
             room: "hall",
             x: checkpoint.x,
@@ -739,8 +878,6 @@ triggerGameOver = function () {
 
         currentRoom = "hall";
 
-        // The original game-over screen will handle
-        // the player's retry button.
         saveGame();
 
         console.log(
@@ -828,10 +965,6 @@ startNewGame = function () {
 // 21. RESUME STORY AFTER PAGE RELOAD
 // =====================================================
 
-// The explosion is saved in script.js.
-// The temporary story state is not.
-// Resume at the flash if the player reloads mid-event.
-
 if (
     castleDestroyed &&
     localStorage.getItem("adVincentDefeated") !== "true"
@@ -867,5 +1000,5 @@ console.log(
 );
 
 console.log(
-    "VINCENT BATTLE: ORIGINAL GAME ENGINE CONNECTED"
+    "VINCENT BATTLE: HARDER ATTACKS ENABLED"
 );
