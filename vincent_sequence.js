@@ -1877,3 +1877,34 @@ createEnemyAttack = function (enemy) {
 };
 
 console.log("VINCENT ANTI-CAMPING ATTACK SYSTEM LOADED");
+
+
+/* =========================================
+   VINCENT — REAL GENOCIDE ENDING LAUGH
+   Plays when the final laugh function is called
+   ========================================= */
+
+var AD_VINCENT_REAL_LAUGH = new Audio("./Vincentevillaugh.m4a");
+
+AD_VINCENT_REAL_LAUGH.preload = "auto";
+AD_VINCENT_REAL_LAUGH.volume = 1;
+
+var AD_VINCENT_REAL_LAUGH_PLAYED = false;
+
+adPlayVincentLaugh = function () {
+    if (AD_VINCENT_REAL_LAUGH_PLAYED) return;
+
+    AD_VINCENT_REAL_LAUGH_PLAYED = true;
+
+    AD_VINCENT_REAL_LAUGH.pause();
+    AD_VINCENT_REAL_LAUGH.currentTime = 0;
+
+    const playback = AD_VINCENT_REAL_LAUGH.play();
+
+    if (playback && playback.catch) {
+        playback.catch(error => {
+            console.warn("Vincent laugh could not play:", error);
+        });
+    }
+};
+
