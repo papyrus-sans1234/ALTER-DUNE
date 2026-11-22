@@ -2012,6 +2012,7 @@ if (paused && !castleDestroyed) return;
         if (key === "1") equipWeapon("wooden_sword");
         if (key === "2") equipWeapon("frying_pan");
         if (key === "3") equipWeapon("toy_knife");
+		if (key === "4") equipWeapon("spear");
 
         return;
     }
@@ -2023,6 +2024,7 @@ if (paused && !castleDestroyed) return;
     if (key === "1" && !e.repeat) equipWeapon("wooden_sword");
     if (key === "2" && !e.repeat) equipWeapon("frying_pan");
     if (key === "3" && !e.repeat) equipWeapon("toy_knife");
+	if (key === "4" && !e.repeat) equipWeapon("spear");
 
     if (key === "h" && !e.repeat) {
         const healing = inventory.find(i =>
