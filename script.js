@@ -3406,8 +3406,30 @@ function updateBattle() {
 
     battle.dodgeTime++;
 
+    const enemy = battle.enemy;
+    const isVincent = enemy?.id === "vincent";
+
+    // Start the first attack or next wave.
     if (battle.bulletTimer === 0) {
-        createEnemyAttack(battle.enemy);
+        if (isVincent) {
+            if (!AD_VINCENT_WAVES.active) {
+                const phase =
+                    enemy.hp <= 120 ? 3 :
+                    enemy.hp <= 240 ? 2 : 1;
+
+                AD_VINCENT_WAVES.active = true;
+                AD_VINCENT_WAVES.wave = 0;
+                AD_VINCENT_WAVES.total =
+                    phase === 1 ? 2 : phase === 2 ? 2 : 3;
+
+                AD_VINCENT_WAVES.pattern =
+                    Math.floor(Math.random() * 6);
+            }
+
+            createEnemyAttack(enemy);
+        } else {
+            createEnemyAttack(enemy);
+        }
     }
 
     battle.bulletTimer++;
@@ -3450,25 +3472,21 @@ function updateBattle() {
 
             const damage = Math.max(
                 1,
-                battle.enemy.damage - battle.defendBonus
+                enemy.damage - battle.defendBonus
             );
 
             player.hp = Math.max(0, player.hp - damage);
             battle.lastDamage = damage;
 
             if (player.hp <= 0) {
-            player.hp = 0;
-
-    triggerGameOver();
-
-    // HARD STOP: no more battle after defeat.
-    gameOver = true;
-    battleOpen = false;
-    battle.bullets = [];
-    keys = {};
-
-    return;
-}
+                player.hp = 0;
+                triggerGameOver();
+                gameOver = true;
+                battleOpen = false;
+                battle.bullets = [];
+                keys = {};
+                return;
+            }
         }
 
         if (
@@ -3486,6 +3504,28 @@ function updateBattle() {
     );
 
     if (battle.bulletTimer >= battle.bulletDuration) {
+
+        if (
+            isVincent &&
+            AD_VINCENT_WAVES.wave + 1 <
+            AD_VINCENT_WAVES.total
+        ) {
+            AD_VINCENT_WAVES.wave++;
+
+            // Give the player a short pause between waves.
+            battle.bullets = [];
+            battle.bulletTimer = 0;
+            battle.bulletDuration = 65;
+            battle.message =
+                "Vincent prepares another wave...";
+            return;
+        }
+
+        if (isVincent) {
+            AD_VINCENT_WAVES.active = false;
+            AD_VINCENT_WAVES.wave = 0;
+        }
+
         battle.phase = "menu";
         battle.menu = "main";
         battle.selected = 0;
@@ -3497,6 +3537,7 @@ function updateBattle() {
             "Your turn! Choose your next action.";
     }
 }
+
 
 // =====================================================
 // DRAW NPCS
