@@ -3,106 +3,87 @@
    ALTER DUNE — VINCENT SEQUENCE
    Grand Hall TNT Event + Vincent Boss Battle
    Requires: script.js and vincentsprite.png
+   Soundtrack: VINCENT.mp3
    ===================================================== */
+
+// -----------------------------------------------------
+// VINCENT SOUNDTRACK REGISTRATION
+// -----------------------------------------------------
+
+if (!musicTracks.vincent) {
+    musicTracks.vincent = new Audio("./VINCENT.mp3");
+    musicTracks.vincent.loop = true;
+    musicTracks.vincent.volume = 0;
+    musicTracks.vincent.preload = "auto";
+
+    musicTracks.vincent.addEventListener("error", () => {
+        console.error("Could not load Vincent soundtrack:", musicTracks.vincent.src);
+    });
+}
+
+// -----------------------------------------------------
+// BOSS STATE
+// -----------------------------------------------------
 
 const AD_VINCENT = {
     active: false,
     mode: "story",
     line: 0,
     timer: 0,
+
     bossHP: 360,
     bossMaxHP: 360,
-    phase: 1,
+
+    // IMPORTANT: phase is a STRING, not a number.
+    phase: "menu",
+    phaseNumber: 1,
+
     menu: 0,
+
     aimX: 70,
     aimDirection: 1,
-    heart: { x: W / 2, y: 260 },
+
+    heart: {
+        x: W / 2,
+        y: 300
+    },
+
     bullets: [],
     bulletTimer: 0,
     attackTimer: 0,
+
     message: "",
+    soundtrackStarted: false,
+
     sprite: new Image()
 };
 
 AD_VINCENT.sprite.src = "./vincentsprite.png";
 
+// -----------------------------------------------------
+// STORY
+// -----------------------------------------------------
+
 const AD_VINCENT_STORY = [
-    {
-        speaker: "NARRATOR",
-        text: "You enter the Grand Hall. The castle is silent."
-    },
-    {
-        speaker: "NARRATOR",
-        text: "You take the TNT out of your inventory."
-    },
-    {
-        speaker: "NARRATOR",
-        text: "You carefully place it in the centre of the hall."
-    },
-    {
-        speaker: "NARRATOR",
-        text: "Now... ignite it."
-    },
-    {
-        speaker: "NARRATOR",
-        text: "The castle begins to shake."
-    },
-    {
-        speaker: "NARRATOR",
-        text: "A blinding flash consumes everything."
-    },
-    {
-        speaker: "NARRATOR",
-        text: "..."
-    },
-    {
-        speaker: "NARRATOR",
-        text: "You open your eyes."
-    },
-    {
-        speaker: "NARRATOR",
-        text: "There is nothing here. No walls. No ceiling. No light."
-    },
-    {
-        speaker: "UNKNOWN",
-        text: "..."
-    },
-    {
-        speaker: "UNKNOWN",
-        text: "YOU ACTUALLY MADE IT THIS FAR?"
-    },
-    {
-        speaker: "UNKNOWN",
-        text: "HOW... INTERESTING."
-    },
-    {
-        speaker: "VINCENT",
-        text: "HAHAHAHAHAHA!"
-    },
-    {
-        speaker: "VINCENT",
-        text: "Oh, don't look so surprised."
-    },
-    {
-        speaker: "VINCENT",
-        text: "I've been expecting you."
-    },
-    {
-        speaker: "VINCENT",
-        text: "I know everything. Every possibility. Every outcome."
-    },
-    {
-        speaker: "VINCENT",
-        text: "It's a curse, really."
-    },
-    {
-        speaker: "VINCENT",
-        text: "But I rather enjoy it."
-    },
-    {
-        speaker: "VINCENT",
-        text: "LET'S SEE WHAT YOU CAN DO."
-    }
+    { speaker: "NARRATOR", text: "You enter the Grand Hall. The castle is silent." },
+    { speaker: "NARRATOR", text: "You take the TNT out of your inventory." },
+    { speaker: "NARRATOR", text: "You carefully place it in the centre of the hall." },
+    { speaker: "NARRATOR", text: "Now... ignite it." },
+    { speaker: "NARRATOR", text: "The castle begins to shake." },
+    { speaker: "NARRATOR", text: "A blinding flash consumes everything." },
+    { speaker: "NARRATOR", text: "..." },
+    { speaker: "NARRATOR", text: "You open your eyes." },
+    { speaker: "NARRATOR", text: "There is nothing here. No walls. No ceiling. No light." },
+    { speaker: "UNKNOWN", text: "..." },
+    { speaker: "UNKNOWN", text: "YOU ACTUALLY MADE IT THIS FAR?" },
+    { speaker: "UNKNOWN", text: "HOW... INTERESTING." },
+    { speaker: "VINCENT", text: "HAHAHAHAHAHA!" },
+    { speaker: "VINCENT", text: "Oh, don't look so surprised." },
+    { speaker: "VINCENT", text: "I've been expecting you." },
+    { speaker: "VINCENT", text: "I know everything. Every possibility. Every outcome." },
+    { speaker: "VINCENT", text: "It's a curse, really." },
+    { speaker: "VINCENT", text: "But I rather enjoy it." },
+    { speaker: "VINCENT", text: "LET'S SEE WHAT YOU CAN DO." }
 ];
 
 // -----------------------------------------------------
@@ -125,13 +106,24 @@ function startVincentSequence() {
     AD_VINCENT.line = 0;
     AD_VINCENT.timer = 0;
 
+    AD_VINCENT.phase = "menu";
+    AD_VINCENT.phaseNumber = 1;
+    AD_VINCENT.bossHP = AD_VINCENT.bossMaxHP;
+    AD_VINCENT.menu = 0;
+    AD_VINCENT.bullets = [];
+    AD_VINCENT.message = "";
+    AD_VINCENT.soundtrackStarted = false;
+
+    AD_VINCENT.heart.x = W / 2;
+    AD_VINCENT.heart.y = 300;
+
     paused = true;
     dialogueOpen = false;
     inventoryOpen = false;
     battleOpen = false;
     keys = {};
 
-    playMusic("king");
+    // Music changes to Vincent's track when his sprite appears.
 }
 
 // -----------------------------------------------------
@@ -165,19 +157,22 @@ document.addEventListener("keydown", function (e) {
 
     const key = e.key.toLowerCase();
 
+    // STORY INPUT
     if (AD_VINCENT.mode === "story") {
-        if (
-            key === "z" ||
-            key === "enter" ||
-            key === " "
-        ) {
+        if (key === "z" || key === "enter" || key === " ") {
             AD_VINCENT.line++;
 
             if (AD_VINCENT.line >= AD_VINCENT_STORY.length) {
                 AD_VINCENT.mode = "battle";
+                AD_VINCENT.phase = "menu";
+                AD_VINCENT.phaseNumber = 1;
                 AD_VINCENT.bossHP = AD_VINCENT.bossMaxHP;
                 AD_VINCENT.menu = 0;
+                AD_VINCENT.bullets = [];
                 AD_VINCENT.message = "VINCENT IS READY.";
+
+                AD_VINCENT.heart.x = W / 2;
+                AD_VINCENT.heart.y = 300;
             }
         }
 
@@ -186,17 +181,33 @@ document.addEventListener("keydown", function (e) {
 
     if (AD_VINCENT.mode !== "battle") return;
 
+    // DODGE MOVEMENT
     if (AD_VINCENT.phase === "dodge") {
-        if (key.startsWith("arrow") || ["w", "a", "s", "d"].includes(key)) {
-            if (key === "arrowleft" || key === "a") AD_VINCENT.heart.x -= 18;
-            if (key === "arrowright" || key === "d") AD_VINCENT.heart.x += 18;
-            if (key === "arrowup" || key === "w") AD_VINCENT.heart.y -= 18;
-            if (key === "arrowdown" || key === "s") AD_VINCENT.heart.y += 18;
+        if (
+            key.startsWith("arrow") ||
+            ["w", "a", "s", "d"].includes(key)
+        ) {
+            if (key === "arrowleft" || key === "a") {
+                AD_VINCENT.heart.x -= 18;
+            }
+
+            if (key === "arrowright" || key === "d") {
+                AD_VINCENT.heart.x += 18;
+            }
+
+            if (key === "arrowup" || key === "w") {
+                AD_VINCENT.heart.y -= 18;
+            }
+
+            if (key === "arrowdown" || key === "s") {
+                AD_VINCENT.heart.y += 18;
+            }
         }
 
         return;
     }
 
+    // FIGHT TIMING BAR
     if (AD_VINCENT.phase === "aim") {
         if (key === "z" || key === "enter") {
             const accuracy = Math.max(
@@ -207,7 +218,9 @@ document.addEventListener("keydown", function (e) {
             const weapon = itemInfo[equippedWeapon];
             const power = weapon?.power || 3;
 
-            const damage = Math.round(power * (0.5 + accuracy * 2));
+            const damage = Math.round(
+                power * (0.5 + accuracy * 2)
+            );
 
             AD_VINCENT.bossHP = Math.max(
                 0,
@@ -218,6 +231,7 @@ document.addEventListener("keydown", function (e) {
 
             if (AD_VINCENT.bossHP <= 0) {
                 AD_VINCENT.mode = "victory";
+                AD_VINCENT.timer = 0;
             } else {
                 AD_VINCENT.phase = "menu";
             }
@@ -226,61 +240,77 @@ document.addEventListener("keydown", function (e) {
         return;
     }
 
+    // MENU NAVIGATION
     if (AD_VINCENT.phase === "menu") {
-        if (key === "arrowleft" || key === "a" ||
-            key === "arrowup" || key === "w") {
+        if (
+            key === "arrowleft" ||
+            key === "a" ||
+            key === "arrowup" ||
+            key === "w"
+        ) {
             AD_VINCENT.menu = Math.max(0, AD_VINCENT.menu - 1);
         }
 
-        if (key === "arrowright" || key === "d" ||
-            key === "arrowdown" || key === "s") {
+        if (
+            key === "arrowright" ||
+            key === "d" ||
+            key === "arrowdown" ||
+            key === "s"
+        ) {
             AD_VINCENT.menu = Math.min(2, AD_VINCENT.menu + 1);
         }
 
         if (key === "z" || key === "enter") {
+
+            // FIGHT
             if (AD_VINCENT.menu === 0) {
                 AD_VINCENT.phase = "aim";
                 AD_VINCENT.aimX = 70;
                 AD_VINCENT.aimDirection = 1;
+                return;
             }
 
+            // OBSERVE
             if (AD_VINCENT.menu === 1) {
                 AD_VINCENT.message =
                     "You observe Vincent. He seems amused.";
+
                 AD_VINCENT.phase = "enemy";
                 AD_VINCENT.attackTimer = 0;
+                return;
             }
 
+            // ITEM
             if (AD_VINCENT.menu === 2) {
                 if (player.hp >= player.maxHp) {
                     AD_VINCENT.message = "YOUR HP IS ALREADY FULL.";
+                    return;
+                }
+
+                const healingItem = inventory.find(item =>
+                    itemInfo[item.id]?.type === "healing"
+                );
+
+                if (healingItem) {
+                    const info = itemInfo[healingItem.id];
+                    const before = player.hp;
+
+                    player.hp = info.fullHeal
+                        ? player.maxHp
+                        : Math.min(
+                            player.maxHp,
+                            player.hp + info.heal
+                        );
+
+                    removeItem(healingItem.id);
+
+                    AD_VINCENT.message =
+                        "RECOVERED " + (player.hp - before) + " HP.";
+
+                    AD_VINCENT.phase = "enemy";
+                    AD_VINCENT.attackTimer = 0;
                 } else {
-                    const healingItem = inventory.find(item =>
-                        itemInfo[item.id]?.type === "healing"
-                    );
-
-                    if (healingItem) {
-                        const info = itemInfo[healingItem.id];
-
-                        const before = player.hp;
-
-                        player.hp = info.fullHeal
-                            ? player.maxHp
-                            : Math.min(
-                                player.maxHp,
-                                player.hp + info.heal
-                            );
-
-                        removeItem(healingItem.id);
-
-                        AD_VINCENT.message =
-                            "RECOVERED " + (player.hp - before) + " HP.";
-
-                        AD_VINCENT.phase = "enemy";
-                        AD_VINCENT.attackTimer = 0;
-                    } else {
-                        AD_VINCENT.message = "YOU HAVE NO HEALING ITEMS.";
-                    }
+                    AD_VINCENT.message = "YOU HAVE NO HEALING ITEMS.";
                 }
             }
         }
@@ -294,9 +324,15 @@ document.addEventListener("keydown", function (e) {
 function updateVincentBattle() {
     if (AD_VINCENT.mode !== "battle") return;
 
-    if (AD_VINCENT.bossHP <= 240) AD_VINCENT.phaseNumber = 2;
-    if (AD_VINCENT.bossHP <= 120) AD_VINCENT.phaseNumber = 3;
+    if (AD_VINCENT.bossHP <= 240) {
+        AD_VINCENT.phaseNumber = 2;
+    }
 
+    if (AD_VINCENT.bossHP <= 120) {
+        AD_VINCENT.phaseNumber = 3;
+    }
+
+    // FIGHT TIMING BAR
     if (AD_VINCENT.phase === "aim") {
         AD_VINCENT.aimX += AD_VINCENT.aimDirection * 5;
 
@@ -311,15 +347,16 @@ function updateVincentBattle() {
         }
     }
 
+    // VINCENT'S ATTACK
     if (AD_VINCENT.phase === "enemy") {
         AD_VINCENT.attackTimer++;
 
         if (AD_VINCENT.attackTimer % 18 === 0) {
-            const phase = AD_VINCENT.phaseNumber || 1;
+            const phase = AD_VINCENT.phaseNumber;
 
             AD_VINCENT.bullets.push({
                 x: Math.random() * (W - 100) + 50,
-                y: 110,
+                y: 240,
                 speed: 2.5 + phase * 0.8,
                 size: 6 + phase
             });
@@ -329,23 +366,26 @@ function updateVincentBattle() {
             AD_VINCENT.phase = "dodge";
             AD_VINCENT.attackTimer = 0;
             AD_VINCENT.bulletTimer = 0;
+
             AD_VINCENT.heart.x = W / 2;
-            AD_VINCENT.heart.y = 260;
+            AD_VINCENT.heart.y = 300;
+
             AD_VINCENT.message = "DODGE VINCENT'S ATTACKS!";
         }
     }
 
+    // DODGE PHASE
     if (AD_VINCENT.phase === "dodge") {
         AD_VINCENT.bulletTimer++;
 
         AD_VINCENT.heart.x = Math.max(
-            45,
-            Math.min(W - 45, AD_VINCENT.heart.x)
+            60,
+            Math.min(W - 60, AD_VINCENT.heart.x)
         );
 
         AD_VINCENT.heart.y = Math.max(
-            120,
-            Math.min(335, AD_VINCENT.heart.y)
+            245,
+            Math.min(350, AD_VINCENT.heart.y)
         );
 
         AD_VINCENT.bullets.forEach(bullet => {
@@ -357,9 +397,10 @@ function updateVincentBattle() {
                     bullet.y - AD_VINCENT.heart.y
                 ) < bullet.size + 10
             ) {
-                bullet.hit = true;
-
-                player.hp = Math.max(0, player.hp - 2);
+                if (!bullet.hit) {
+                    bullet.hit = true;
+                    player.hp = Math.max(0, player.hp - 2);
+                }
 
                 if (player.hp <= 0) {
                     AD_VINCENT.active = false;
@@ -383,7 +424,7 @@ function updateVincentBattle() {
 }
 
 // -----------------------------------------------------
-// DRAWING HELPERS
+// TEXT HELPER
 // -----------------------------------------------------
 
 function vincentText(text, x, y, size = 16, color = "white") {
@@ -392,6 +433,10 @@ function vincentText(text, x, y, size = 16, color = "white") {
     ctx.textAlign = "center";
     ctx.fillText(text, x, y);
 }
+
+// -----------------------------------------------------
+// VINCENT SPRITE
+// -----------------------------------------------------
 
 function drawVincentSprite(x, y, width, height) {
     if (
@@ -411,7 +456,33 @@ function drawVincentSprite(x, y, width, height) {
 }
 
 // -----------------------------------------------------
-// CINEMATIC DRAWING
+// PLAYER SPRITE FOR BOSS BATTLE
+// Uses the same appearance as script.js drawPlayer().
+// -----------------------------------------------------
+
+function drawVincentPlayerSprite(x, y) {
+    ctx.fillStyle = "#4a8ac7";
+    ctx.fillRect(x - 9, y - 5, 18, 17);
+
+    ctx.fillStyle = "#e8b68d";
+    ctx.fillRect(x - 8, y - 16, 16, 12);
+
+    ctx.fillStyle = "#392b27";
+    ctx.fillRect(x - 9, y - 18, 18, 5);
+
+    ctx.fillStyle = "#171321";
+    ctx.fillRect(x - 5, y - 12, 2, 2);
+    ctx.fillRect(x + 3, y - 12, 2, 2);
+
+    ctx.fillStyle = "#302a43";
+    ctx.fillRect(x - 7, y + 11, 5, 6);
+    ctx.fillRect(x + 3, y + 11, 5, 6);
+
+    vincentText("YOU", x, y + 35, 10, "#ffffff");
+}
+
+// -----------------------------------------------------
+// STORY DRAWING
 // -----------------------------------------------------
 
 function drawVincentStory() {
@@ -422,24 +493,28 @@ function drawVincentStory() {
     ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, W, H);
 
-    // Explosion flash.
     if (AD_VINCENT.line === 5) {
         ctx.fillStyle = "#fff";
         ctx.fillRect(0, 0, W, H);
     }
 
-    // Pitch-black room.
     if (AD_VINCENT.line >= 6 && AD_VINCENT.line <= 11) {
         ctx.fillStyle = "#000";
         ctx.fillRect(0, 0, W, H);
     }
 
-    // Vincent appears.
+    // VINCENT APPEARS
     if (AD_VINCENT.line >= 12) {
         ctx.fillStyle = "#050509";
         ctx.fillRect(0, 0, W, H);
 
         drawVincentSprite(W / 2, 245, 150, 220);
+
+        // Start soundtrack exactly once, when Vincent appears.
+        if (!AD_VINCENT.soundtrackStarted) {
+            AD_VINCENT.soundtrackStarted = true;
+            playMusic("vincent");
+        }
     }
 
     ctx.fillStyle = "#080808";
@@ -467,11 +542,15 @@ function drawVincentBattle() {
     ctx.fillStyle = "#08070d";
     ctx.fillRect(0, 0, W, H);
 
+    // VINCENT
     drawVincentSprite(W / 2, 210, 125, 180);
+
+    // PLAYER CHARACTER
+    drawVincentPlayerSprite(95, 205);
 
     vincentText("VINCENT", W / 2, 25, 18, "#eee");
 
-    // Boss HP bar.
+    // BOSS HP BAR
     ctx.fillStyle = "#45232e";
     ctx.fillRect(120, 43, 280, 9);
 
@@ -490,6 +569,7 @@ function drawVincentBattle() {
         11
     );
 
+    // MENU
     if (AD_VINCENT.phase === "menu") {
         ctx.fillStyle = "#17131f";
         ctx.fillRect(35, 230, W - 70, 135);
@@ -510,8 +590,10 @@ function drawVincentBattle() {
         });
 
         vincentText(AD_VINCENT.message, W / 2, 330, 11);
+        vincentText("ARROWS = SELECT | Z = CONFIRM", W / 2, 350, 10, "#aaa");
     }
 
+    // FIGHT TIMING BAR
     if (AD_VINCENT.phase === "aim") {
         ctx.fillStyle = "#201a2a";
         ctx.fillRect(45, 250, W - 90, 70);
@@ -528,6 +610,7 @@ function drawVincentBattle() {
         vincentText("PRESS Z / ENTER NEAR THE CENTRE", W / 2, 340, 11);
     }
 
+    // ENEMY ATTACK AND DODGE
     if (
         AD_VINCENT.phase === "enemy" ||
         AD_VINCENT.phase === "dodge"
@@ -542,17 +625,25 @@ function drawVincentBattle() {
         AD_VINCENT.bullets.forEach(bullet => {
             ctx.fillStyle = "#d7c5ff";
             ctx.beginPath();
-            ctx.arc(bullet.x, bullet.y, bullet.size, 0, Math.PI * 2);
+            ctx.arc(
+                bullet.x,
+                bullet.y,
+                bullet.size,
+                0,
+                Math.PI * 2
+            );
             ctx.fill();
         });
 
-        // Player heart.
+        // PLAYER HEART
         ctx.fillStyle = "#ff334d";
         ctx.beginPath();
+
         ctx.moveTo(
             AD_VINCENT.heart.x,
             AD_VINCENT.heart.y + 7
         );
+
         ctx.arc(
             AD_VINCENT.heart.x - 5,
             AD_VINCENT.heart.y - 3,
@@ -560,6 +651,7 @@ function drawVincentBattle() {
             0,
             Math.PI
         );
+
         ctx.arc(
             AD_VINCENT.heart.x + 5,
             AD_VINCENT.heart.y - 3,
@@ -567,15 +659,16 @@ function drawVincentBattle() {
             0,
             Math.PI
         );
+
         ctx.fill();
 
-        vincentText("MOVE WITH ARROW KEYS", W / 2, 350, 10);
+        vincentText("MOVE WITH ARROW KEYS OR WASD", W / 2, 385, 10);
     }
 
     vincentText(
         "YOUR HP: " + player.hp + " / " + player.maxHp,
         W / 2,
-        395,
+        415,
         12
     );
 }
@@ -624,8 +717,20 @@ drawInventory = function () {
 
         drawVincentSprite(W / 2, 250, 130, 190);
 
-        vincentText("VINCENT DEFEATED", W / 2, 330, 20, "#e5c16e");
-        vincentText("THE END... FOR NOW.", W / 2, 365, 12);
+        vincentText(
+            "VINCENT DEFEATED",
+            W / 2,
+            330,
+            20,
+            "#e5c16e"
+        );
+
+        vincentText(
+            "THE END... FOR NOW.",
+            W / 2,
+            365,
+            12
+        );
 
         AD_VINCENT.timer++;
 
