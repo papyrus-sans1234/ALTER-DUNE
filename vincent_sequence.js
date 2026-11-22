@@ -1419,3 +1419,74 @@ playMusic = function (track) {
 };
 
 console.log("EXPLORATION MUSIC DISABLED AFTER TNT EVENT");
+
+
+/* =====================================================
+   ALTER DUNE — KING DEFEAT / RETRY FIX
+   ===================================================== */
+
+// Reset the King after the player loses his battle.
+const AD_KING_OLD_GAME_OVER = triggerGameOver;
+
+triggerGameOver = function () {
+    const diedToKing =
+        battleOpen &&
+        battle &&
+        battle.enemy &&
+        battle.enemy.id === "king";
+
+    AD_KING_OLD_GAME_OVER();
+
+    if (diedToKing && king) {
+        king.hp = king.maxHp;
+        king.defeated = false;
+        king.active = true;
+
+        // Remove an incorrectly awarded victory reward.
+        inventory = inventory.filter(
+            item => item !== "royal_treasure"
+        );
+    }
+};
+
+// Make sure retry always restores the King.
+const AD_KING_OLD_RETRY = retryCheckpoint;
+
+retryCheckpoint = function () {
+    if (king && battle && battle.enemy?.id === "king") {
+        king.hp = king.maxHp;
+        king.defeated = false;
+        king.active = true;
+
+        inventory = inventory.filter(
+            item => item !== "royal_treasure"
+        );
+    }
+
+    AD_KING_OLD_RETRY();
+};
+
+// Repair an already-glitched save if the King was
+// marked defeated without actually awarding the treasure.
+const AD_KING_OLD_LOAD = loadGame;
+
+loadGame = function () {
+    AD_KING_OLD_LOAD();
+
+    if (
+        king &&
+        king.defeated &&
+        !inventory.includes("royal_treasure")
+    ) {
+        king.hp = king.maxHp;
+        king.defeated = false;
+        king.active = true;
+
+        saveGame();
+
+        console.log("KING SAVE RECOVERED");
+    }
+};
+
+console.log("KING DEFEAT / RETRY FIX LOADED");
+
