@@ -1,22 +1,26 @@
 
 /* =====================================================
    ALTER DUNE — VINCENT SEQUENCE
-   Grand Hall TNT Event + Vincent Boss Battle
+   Grand Hall TNT Event + Original Battle Engine
 
    Requires:
-   - script.js (including castleDestroyed patches)
+   - script.js (loaded FIRST)
    - vincentsprite.png
    - Analysis output 1.png (loaded by script.js)
+   - VINCENT.mp3
 
-   Soundtrack: VINCENT.mp3
+   IMPORTANT:
+   Vincent uses the ORIGINAL ALTER DUNE battle system.
    ===================================================== */
 
-// -----------------------------------------------------
-// VINCENT SOUNDTRACK REGISTRATION
-// -----------------------------------------------------
+
+// =====================================================
+// 1. VINCENT SOUNDTRACK
+// =====================================================
 
 if (!musicTracks.vincent) {
     musicTracks.vincent = new Audio("./VINCENT.mp3");
+
     musicTracks.vincent.loop = true;
     musicTracks.vincent.volume = 0;
     musicTracks.vincent.preload = "auto";
@@ -29,40 +33,24 @@ if (!musicTracks.vincent) {
     });
 }
 
-// -----------------------------------------------------
-// BOSS STATE
-// -----------------------------------------------------
+
+// =====================================================
+// 2. VINCENT STATE
+// =====================================================
 
 const AD_VINCENT = {
     active: false,
     mode: "story",
     line: 0,
-    timer: 0,
 
     bossHP: 360,
     bossMaxHP: 360,
 
-    phase: "menu",
-    phaseNumber: 1,
-
-    menu: 0,
-
-    aimX: 70,
-    aimDirection: 1,
-
-    heart: {
-        x: W / 2,
-        y: 300
-    },
-
-    bullets: [],
-    bulletTimer: 0,
-    attackTimer: 0,
-
-    message: "",
+    defeated: false,
     soundtrackStarted: false,
 
-    sprite: new Image()
+    sprite: new Image(),
+    enemy: null
 };
 
 AD_VINCENT.sprite.src = "./vincentsprite.png";
@@ -74,9 +62,10 @@ AD_VINCENT.sprite.addEventListener("error", () => {
     );
 });
 
-// -----------------------------------------------------
-// STORY
-// -----------------------------------------------------
+
+// =====================================================
+// 3. STORY
+// =====================================================
 
 const AD_VINCENT_STORY = [
     {
@@ -157,9 +146,42 @@ const AD_VINCENT_STORY = [
     }
 ];
 
-// -----------------------------------------------------
-// START EVENT
-// -----------------------------------------------------
+
+// =====================================================
+// 4. CREATE VINCENT AS AN ORIGINAL BATTLE ENEMY
+// =====================================================
+
+function createVincentEnemy() {
+    return {
+        id: "vincent",
+        name: "Vincent",
+
+        hp: AD_VINCENT.bossMaxHP,
+        maxHp: AD_VINCENT.bossMaxHP,
+
+        // Damage dealt when his projectiles hit.
+        damage: 6,
+
+        color: "#a7a7b5",
+        difficulty: 3,
+
+        active: true,
+        defeated: false,
+        spared: false,
+
+        actScore: 0,
+        fleeGrace: 0,
+        alerted: true,
+
+        // Extra battle information.
+        phaseNumber: 1
+    };
+}
+
+
+// =====================================================
+// 5. START VINCENT STORY
+// =====================================================
 
 function startVincentSequence() {
     if (AD_VINCENT.active) return;
@@ -180,45 +202,29 @@ function startVincentSequence() {
         return;
     }
 
-    // TNT is deliberately NOT consumed here.
-    // It is consumed when the explosion actually happens.
-
     AD_VINCENT.active = true;
     AD_VINCENT.mode = "story";
     AD_VINCENT.line = 0;
-    AD_VINCENT.timer = 0;
 
-    AD_VINCENT.phase = "menu";
-    AD_VINCENT.phaseNumber = 1;
-    AD_VINCENT.bossHP = AD_VINCENT.bossMaxHP;
-    AD_VINCENT.menu = 0;
-
-    AD_VINCENT.bullets = [];
-    AD_VINCENT.bulletTimer = 0;
-    AD_VINCENT.attackTimer = 0;
-
-    AD_VINCENT.message = "";
+    AD_VINCENT.defeated = false;
     AD_VINCENT.soundtrackStarted = false;
 
-    AD_VINCENT.aimX = 70;
-    AD_VINCENT.aimDirection = 1;
+    AD_VINCENT.bossHP = AD_VINCENT.bossMaxHP;
 
-    AD_VINCENT.heart.x = W / 2;
-    AD_VINCENT.heart.y = 300;
+    AD_VINCENT.enemy = createVincentEnemy();
 
     paused = true;
+    battleOpen = false;
     dialogueOpen = false;
     inventoryOpen = false;
-    battleOpen = false;
 
     keys = {};
-
-    // Vincent's soundtrack starts when his sprite appears.
 }
 
-// -----------------------------------------------------
-// CONNECT TO EXISTING INTERACTION SYSTEM
-// -----------------------------------------------------
+
+// =====================================================
+// 6. CONNECT TO ORIGINAL INTERACTION SYSTEM
+// =====================================================
 
 const AD_VINCENT_OLD_INTERACT = interact;
 
@@ -236,389 +242,363 @@ interact = function () {
     AD_VINCENT_OLD_INTERACT();
 };
 
-// -----------------------------------------------------
-// INPUT
-// -----------------------------------------------------
+
+// =====================================================
+// 7. STORY INPUT
+// =====================================================
+
+// Capture input BEFORE the original game keyboard handler.
+// This only intercepts input during Vincent's story.
+// The original battle input remains untouched.
 
 document.addEventListener("keydown", function (e) {
-    if (!AD_VINCENT.active) return;
+    if (
+        !AD_VINCENT.active ||
+        AD_VINCENT.mode !== "story"
+    ) {
+        return;
+    }
 
     e.preventDefault();
     e.stopImmediatePropagation();
 
     const key = e.key.toLowerCase();
 
-    // -----------------------------------------------
-    // STORY INPUT
-    // -----------------------------------------------
-
-    if (AD_VINCENT.mode === "story") {
-        if (
-            key === "z" ||
-            key === "enter" ||
-            key === " "
-        ) {
-            AD_VINCENT.line++;
-
-            // THE EXPLOSION
-            if (
-                AD_VINCENT.line === 5 &&
-                !castleDestroyed
-            ) {
-                removeItem("tnt");
-
-                castleDestroyed = true;
-
-                saveGame();
-                updateLocation();
-            }
-
-            // STORY FINISHED: START BOSS
-            if (
-                AD_VINCENT.line >=
-                AD_VINCENT_STORY.length
-            ) {
-                AD_VINCENT.mode = "battle";
-                AD_VINCENT.phase = "menu";
-                AD_VINCENT.phaseNumber = 1;
-
-                AD_VINCENT.bossHP =
-                    AD_VINCENT.bossMaxHP;
-
-                AD_VINCENT.menu = 0;
-                AD_VINCENT.bullets = [];
-                AD_VINCENT.attackTimer = 0;
-                AD_VINCENT.bulletTimer = 0;
-
-                AD_VINCENT.message =
-                    "VINCENT IS READY.";
-
-                AD_VINCENT.heart.x = W / 2;
-                AD_VINCENT.heart.y = 300;
-            }
-        }
-
+    if (
+        key !== "z" &&
+        key !== "enter" &&
+        key !== " "
+    ) {
         return;
     }
 
-    if (AD_VINCENT.mode !== "battle") return;
+    AD_VINCENT.line++;
 
     // -----------------------------------------------
-    // DODGE MOVEMENT
+    // TNT EXPLOSION
     // -----------------------------------------------
 
-    if (AD_VINCENT.phase === "dodge") {
-        if (
-            key.startsWith("arrow") ||
-            ["w", "a", "s", "d"].includes(key)
-        ) {
-            if (
-                key === "arrowleft" ||
-                key === "a"
-            ) {
-                AD_VINCENT.heart.x -= 18;
-            }
+    if (
+        AD_VINCENT.line === 5 &&
+        !castleDestroyed
+    ) {
+        removeItem("tnt");
 
-            if (
-                key === "arrowright" ||
-                key === "d"
-            ) {
-                AD_VINCENT.heart.x += 18;
-            }
+        castleDestroyed = true;
 
-            if (
-                key === "arrowup" ||
-                key === "w"
-            ) {
-                AD_VINCENT.heart.y -= 18;
-            }
-
-            if (
-                key === "arrowdown" ||
-                key === "s"
-            ) {
-                AD_VINCENT.heart.y += 18;
-            }
-        }
-
-        return;
+        saveGame();
+        updateLocation();
     }
 
     // -----------------------------------------------
-    // FIGHT TIMING BAR
+    // STORY COMPLETE: START ORIGINAL BATTLE
     // -----------------------------------------------
 
-    if (AD_VINCENT.phase === "aim") {
-        if (key === "z" || key === "enter") {
-            const accuracy = Math.max(
-                0,
-                1 -
-                Math.abs(
-                    AD_VINCENT.aimX - 260
-                ) / 190
-            );
+    if (
+        AD_VINCENT.line >=
+        AD_VINCENT_STORY.length
+    ) {
+        AD_VINCENT.mode = "battle";
 
-            const weapon = itemInfo[equippedWeapon];
-            const power = weapon?.power || 3;
+        AD_VINCENT.enemy = createVincentEnemy();
 
-            const damage = Math.round(
-                power * (0.5 + accuracy * 2)
-            );
+        paused = false;
 
-            AD_VINCENT.bossHP = Math.max(
-                0,
-                AD_VINCENT.bossHP - damage
-            );
+        // This calls the real startBattle()
+        // from script.js.
+        startBattle(AD_VINCENT.enemy);
 
-            AD_VINCENT.message =
-                "YOU DEALT " + damage + " DAMAGE!";
+        // The original startBattle() selects normal
+        // fight music. Replace it with Vincent's music.
+        playMusic("vincent");
 
-            if (AD_VINCENT.bossHP <= 0) {
-                AD_VINCENT.mode = "victory";
-                AD_VINCENT.timer = 0;
-            } else {
-                AD_VINCENT.phase = "menu";
-            }
-        }
-
-        return;
-    }
-
-    // -----------------------------------------------
-    // MENU NAVIGATION
-    // -----------------------------------------------
-
-    if (AD_VINCENT.phase === "menu") {
-
-        if (
-            key === "arrowleft" ||
-            key === "a" ||
-            key === "arrowup" ||
-            key === "w"
-        ) {
-            AD_VINCENT.menu = Math.max(
-                0,
-                AD_VINCENT.menu - 1
-            );
-        }
-
-        if (
-            key === "arrowright" ||
-            key === "d" ||
-            key === "arrowdown" ||
-            key === "s"
-        ) {
-            AD_VINCENT.menu = Math.min(
-                2,
-                AD_VINCENT.menu + 1
-            );
-        }
-
-        if (key === "z" || key === "enter") {
-
-            // FIGHT
-            if (AD_VINCENT.menu === 0) {
-                AD_VINCENT.phase = "aim";
-                AD_VINCENT.aimX = 70;
-                AD_VINCENT.aimDirection = 1;
-
-                return;
-            }
-
-            // OBSERVE
-            if (AD_VINCENT.menu === 1) {
-                AD_VINCENT.message =
-                    "You observe Vincent. He seems amused.";
-
-                AD_VINCENT.phase = "enemy";
-                AD_VINCENT.attackTimer = 0;
-
-                return;
-            }
-
-            // ITEM
-            if (AD_VINCENT.menu === 2) {
-
-                if (player.hp >= player.maxHp) {
-                    AD_VINCENT.message =
-                        "YOUR HP IS ALREADY FULL.";
-
-                    return;
-                }
-
-                const healingItem = inventory.find(item =>
-                    itemInfo[item.id]?.type === "healing"
-                );
-
-                if (healingItem) {
-                    const info = itemInfo[healingItem.id];
-                    const before = player.hp;
-
-                    player.hp = info.fullHeal
-                        ? player.maxHp
-                        : Math.min(
-                            player.maxHp,
-                            player.hp + info.heal
-                        );
-
-                    removeItem(healingItem.id);
-
-                    AD_VINCENT.message =
-                        "RECOVERED " +
-                        (player.hp - before) +
-                        " HP.";
-
-                    AD_VINCENT.phase = "enemy";
-                    AD_VINCENT.attackTimer = 0;
-
-                } else {
-                    AD_VINCENT.message =
-                        "YOU HAVE NO HEALING ITEMS.";
-                }
-            }
-        }
+        AD_VINCENT.soundtrackStarted = true;
     }
 }, true);
 
-// -----------------------------------------------------
-// BOSS UPDATE
-// -----------------------------------------------------
 
-function updateVincentBattle() {
-    if (AD_VINCENT.mode !== "battle") return;
+// =====================================================
+// 8. VINCENT'S CUSTOM PROJECTILE PATTERNS
+// =====================================================
 
-    // PHASE PROGRESSION
-    if (AD_VINCENT.bossHP <= 240) {
-        AD_VINCENT.phaseNumber = 2;
+// Preserve the original projectile attack function.
+const AD_VINCENT_OLD_CREATE_ENEMY_ATTACK =
+    createEnemyAttack;
+
+// Vincent gets custom attacks.
+// Every other enemy keeps its original attacks.
+
+createEnemyAttack = function (enemy) {
+    if (!enemy || enemy.id !== "vincent") {
+        return AD_VINCENT_OLD_CREATE_ENEMY_ATTACK(enemy);
     }
 
-    if (AD_VINCENT.bossHP <= 120) {
-        AD_VINCENT.phaseNumber = 3;
-    }
+    const pattern = battle.turn % 4;
+
+    const phase =
+        enemy.hp <= 120 ? 3 :
+        enemy.hp <= 240 ? 2 : 1;
+
+    enemy.phaseNumber = phase;
+
+    const speedMultiplier = 1 + (phase - 1) * 0.35;
 
     // -----------------------------------------------
-    // FIGHT TIMING BAR
+    // PATTERN 0: COSMIC RAIN
     // -----------------------------------------------
 
-    if (AD_VINCENT.phase === "aim") {
-        AD_VINCENT.aimX +=
-            AD_VINCENT.aimDirection * 5;
-
-        if (AD_VINCENT.aimX >= 450) {
-            AD_VINCENT.aimX = 450;
-            AD_VINCENT.aimDirection = -1;
-        }
-
-        if (AD_VINCENT.aimX <= 70) {
-            AD_VINCENT.aimX = 70;
-            AD_VINCENT.aimDirection = 1;
-        }
-    }
-
-    // -----------------------------------------------
-    // VINCENT'S ATTACK
-    // -----------------------------------------------
-
-    if (AD_VINCENT.phase === "enemy") {
-        AD_VINCENT.attackTimer++;
-
-        if (AD_VINCENT.attackTimer % 18 === 0) {
-            const phase = AD_VINCENT.phaseNumber;
-
-            AD_VINCENT.bullets.push({
-                x: Math.random() * (W - 100) + 50,
-                y: 240,
-                speed: 2.5 + phase * 0.8,
-                size: 6 + phase,
-                hit: false
-            });
-        }
-
-        if (AD_VINCENT.attackTimer >= 150) {
-            AD_VINCENT.phase = "dodge";
-
-            AD_VINCENT.attackTimer = 0;
-            AD_VINCENT.bulletTimer = 0;
-
-            AD_VINCENT.heart.x = W / 2;
-            AD_VINCENT.heart.y = 300;
-
-            AD_VINCENT.message =
-                "DODGE VINCENT'S ATTACKS!";
-        }
-    }
-
-    // -----------------------------------------------
-    // DODGE PHASE
-    // -----------------------------------------------
-
-    if (AD_VINCENT.phase === "dodge") {
-        AD_VINCENT.bulletTimer++;
-
-        AD_VINCENT.heart.x = Math.max(
-            60,
-            Math.min(
-                W - 60,
-                AD_VINCENT.heart.x
-            )
-        );
-
-        AD_VINCENT.heart.y = Math.max(
-            245,
-            Math.min(
-                350,
-                AD_VINCENT.heart.y
-            )
-        );
-
-        AD_VINCENT.bullets.forEach(bullet => {
-            bullet.y += bullet.speed;
-
-            if (
-                Math.hypot(
-                    bullet.x - AD_VINCENT.heart.x,
-                    bullet.y - AD_VINCENT.heart.y
-                ) < bullet.size + 10
-            ) {
-                if (!bullet.hit) {
-                    bullet.hit = true;
-
-                    player.hp = Math.max(
-                        0,
-                        player.hp - 2
-                    );
-                }
-
-                if (player.hp <= 0) {
-                    AD_VINCENT.active = false;
-                    paused = false;
-
-                    triggerGameOver();
-                }
-            }
-        });
-
-        AD_VINCENT.bullets =
-            AD_VINCENT.bullets.filter(
-                bullet =>
-                    !bullet.hit &&
-                    bullet.y < H + 20
+    if (pattern === 0) {
+        for (let i = 0; i < 8; i++) {
+            spawnProjectile(
+                65 + i * 55,
+                75,
+                0,
+                (2.5 + phase * 0.45) * speedMultiplier,
+                9
             );
-
-        if (AD_VINCENT.bulletTimer >= 180) {
-            AD_VINCENT.bullets = [];
-
-            AD_VINCENT.phase = "menu";
-            AD_VINCENT.menu = 0;
-
-            AD_VINCENT.message = "YOUR TURN.";
         }
+
+        return;
+    }
+
+    // -----------------------------------------------
+    // PATTERN 1: AWARENESS
+    // Vincent aims a spread towards the player's heart.
+    // -----------------------------------------------
+
+    if (pattern === 1) {
+        const angle = Math.atan2(
+            battle.heart.y - 85,
+            battle.heart.x - W / 2
+        );
+
+        for (let i = -2; i <= 2; i++) {
+            const shotAngle = angle + i * 0.2;
+
+            spawnProjectile(
+                W / 2,
+                85,
+                Math.cos(shotAngle) * 3.2 * speedMultiplier,
+                Math.sin(shotAngle) * 3.2 * speedMultiplier,
+                9
+            );
+        }
+
+        return;
+    }
+
+    // -----------------------------------------------
+    // PATTERN 2: VOID WALL
+    // -----------------------------------------------
+
+    if (pattern === 2) {
+        const gap = Math.floor(Math.random() * 8);
+
+        for (let i = 0; i < 8; i++) {
+            if (i === gap) continue;
+
+            spawnProjectile(
+                65 + i * 55,
+                75,
+                0,
+                3.1 * speedMultiplier,
+                10
+            );
+        }
+
+        return;
+    }
+
+    // -----------------------------------------------
+    // PATTERN 3: HYPER COSMIC BURST
+    // -----------------------------------------------
+
+    for (let i = 0; i < 10; i++) {
+        const angle =
+            (Math.PI * 2 * i) / 10;
+
+        spawnProjectile(
+            W / 2,
+            170,
+            Math.cos(angle) * 3.2 * speedMultiplier,
+            Math.sin(angle) * 3.2 * speedMultiplier,
+            8
+        );
+    }
+};
+
+
+// =====================================================
+// 9. VINCENT ACT DIALOGUE
+// =====================================================
+
+// Preserve the original enemy descriptions.
+const AD_VINCENT_OLD_DESCRIPTION =
+    getEnemyDescription;
+
+getEnemyDescription = function (enemy) {
+    if (enemy?.id === "vincent") {
+        return "A being cursed with Hyper Cosmic Awareness. He knows every possibility.";
+    }
+
+    return AD_VINCENT_OLD_DESCRIPTION(enemy);
+};
+
+
+// Preserve the original enemy TALK dialogue.
+const AD_VINCENT_OLD_TALK = getEnemyTalk;
+
+getEnemyTalk = function (enemy) {
+    if (enemy?.id === "vincent") {
+        return "Vincent tells you that he already knows what you are going to say.";
+    }
+
+    return AD_VINCENT_OLD_TALK(enemy);
+};
+
+
+// Preserve the original enemy JOKE dialogue.
+const AD_VINCENT_OLD_JOKE = getEnemyJoke;
+
+getEnemyJoke = function (enemy) {
+    if (enemy?.id === "vincent") {
+        return "You tell Vincent a joke. He laughs before you finish telling it.";
+    }
+
+    return AD_VINCENT_OLD_JOKE(enemy);
+};
+
+
+// =====================================================
+// 10. VINCENT CANNOT BE SPARED OR ESCAPED
+// =====================================================
+
+const AD_VINCENT_OLD_SPARE = attemptSpare;
+
+attemptSpare = function () {
+    if (battle.enemy?.id === "vincent") {
+        battle.message =
+            "Vincent already knows how this ends.";
+
+        return;
+    }
+
+    AD_VINCENT_OLD_SPARE();
+};
+
+
+const AD_VINCENT_OLD_FLEE = attemptFlee;
+
+attemptFlee = function () {
+    if (battle.enemy?.id === "vincent") {
+        battle.message =
+            "There is nowhere to run.";
+
+        beginEnemyTurn();
+        return;
+    }
+
+    AD_VINCENT_OLD_FLEE();
+};
+
+
+// =====================================================
+// 11. VINCENT DEFEAT EVENT
+// =====================================================
+
+// Preserve the original defeat handler.
+const AD_VINCENT_OLD_HANDLE_DEFEAT =
+    handleEnemyDefeat;
+
+handleEnemyDefeat = function (enemy) {
+    if (!enemy || enemy.id !== "vincent") {
+        return AD_VINCENT_OLD_HANDLE_DEFEAT(enemy);
+    }
+
+    enemy.hp = 0;
+    enemy.defeated = true;
+    enemy.active = false;
+
+    AD_VINCENT.defeated = true;
+    AD_VINCENT.active = false;
+    AD_VINCENT.mode = "finished";
+
+    // Use the original battle-ending function.
+    finishBattle(true);
+
+    showDialogue(
+        "VINCENT",
+        "Well... that was entertaining. We shall meet again."
+    );
+};
+
+
+// =====================================================
+// 12. VINCENT SPRITE DRAWING
+// =====================================================
+
+function drawVincentSprite(x, y, width, height) {
+    if (
+        AD_VINCENT.sprite.complete &&
+        AD_VINCENT.sprite.naturalWidth > 0
+    ) {
+        ctx.drawImage(
+            AD_VINCENT.sprite,
+            x - width / 2,
+            y - height,
+            width,
+            height
+        );
+    } else {
+        ctx.fillStyle = "#dddddd";
+        ctx.font = "bold 15px monospace";
+        ctx.textAlign = "center";
+
+        ctx.fillText("VINCENT", x, y - 10);
     }
 }
 
-// -----------------------------------------------------
-// TEXT HELPER
-// -----------------------------------------------------
+
+// =====================================================
+// 13. ORIGINAL BATTLE SCREEN + VINCENT SPRITE
+// =====================================================
+
+// Preserve the original battle renderer.
+const AD_VINCENT_OLD_DRAW_BATTLE = drawBattle;
+
+drawBattle = function () {
+    // Draw the COMPLETE original battle screen:
+    // - HP bar
+    // - FIGHT / ACT / ITEM / MERCY
+    // - Attack timing bar
+    // - Dodge arena
+    // - Player sprite
+    // - Projectiles
+    // - Battle messages
+
+    AD_VINCENT_OLD_DRAW_BATTLE();
+
+    if (
+        !battleOpen ||
+        battle.enemy?.id !== "vincent"
+    ) {
+        return;
+    }
+
+    // Vincent appears in the upper-right of
+    // the original battle screen.
+    drawVincentSprite(
+        W - 55,
+        88,
+        52,
+        70
+    );
+};
+
+
+// =====================================================
+// 14. STORY TEXT HELPER
+// =====================================================
 
 function vincentText(
     text,
@@ -634,76 +614,14 @@ function vincentText(
     ctx.fillText(text, x, y);
 }
 
-// -----------------------------------------------------
-// VINCENT SPRITE
-// -----------------------------------------------------
 
-function drawVincentSprite(x, y, width, height) {
-    if (
-        AD_VINCENT.sprite.complete &&
-        AD_VINCENT.sprite.naturalWidth > 0
-    ) {
-        ctx.drawImage(
-            AD_VINCENT.sprite,
-            x - width / 2,
-            y - height,
-            width,
-            height
-        );
-    } else {
-        vincentText(
-            "VINCENT",
-            x,
-            y,
-            20,
-            "#dddddd"
-        );
-    }
-}
-
-// -----------------------------------------------------
-// PLAYER SPRITE FOR BOSS BATTLE
-// Uses the player sprite already loaded by script.js.
-// Exact registered sprite key: "player"
-// -----------------------------------------------------
-
-function drawVincentPlayerSprite(x, y) {
-    const loaded = adDrawSprite(
-        "player",
-        x,
-        y,
-        40,
-        48,
-        {
-            camera: false,
-            offset: 17
-        }
-    );
-
-    if (!loaded) {
-        vincentText(
-            "LOADING PLAYER...",
-            x,
-            y,
-            10,
-            "#ffffff"
-        );
-    }
-
-    vincentText(
-        "YOU",
-        x,
-        y + 35,
-        10,
-        "#ffffff"
-    );
-}
-
-// -----------------------------------------------------
-// STORY DRAWING
-// -----------------------------------------------------
+// =====================================================
+// 15. STORY DRAWING
+// =====================================================
 
 function drawVincentStory() {
+    if (AD_VINCENT.mode !== "story") return;
+
     const scene =
         AD_VINCENT_STORY[AD_VINCENT.line];
 
@@ -718,7 +636,7 @@ function drawVincentStory() {
         ctx.fillRect(0, 0, W, H);
     }
 
-    // THE EMPTY VOID
+    // EMPTY VOID
     if (
         AD_VINCENT.line >= 6 &&
         AD_VINCENT.line <= 11
@@ -739,7 +657,6 @@ function drawVincentStory() {
             220
         );
 
-        // Start soundtrack exactly once.
         if (!AD_VINCENT.soundtrackStarted) {
             AD_VINCENT.soundtrackStarted = true;
             playMusic("vincent");
@@ -748,6 +665,7 @@ function drawVincentStory() {
 
     // DIALOGUE BOX
     ctx.fillStyle = "#080808";
+
     ctx.fillRect(
         15,
         H - 105,
@@ -793,282 +711,17 @@ function drawVincentStory() {
     );
 }
 
-// -----------------------------------------------------
-// BOSS BATTLE DRAWING
-// -----------------------------------------------------
 
-function drawVincentBattle() {
-    ctx.fillStyle = "#08070d";
-    ctx.fillRect(0, 0, W, H);
+// =====================================================
+// 16. OVERLAY STORY ON EXISTING GAME
+// =====================================================
 
-    // VINCENT
-    drawVincentSprite(
-        W / 2,
-        210,
-        125,
-        180
-    );
+// The original battle screen does NOT need to be
+// redrawn here. It is already drawn by gameLoop()
+// through the original drawBattle() function.
 
-    // ACTUAL PLAYER IMAGE
-    drawVincentPlayerSprite(95, 205);
-
-    vincentText(
-        "VINCENT",
-        W / 2,
-        25,
-        18,
-        "#eee"
-    );
-
-    // BOSS HP BAR
-    ctx.fillStyle = "#45232e";
-    ctx.fillRect(120, 43, 280, 9);
-
-    ctx.fillStyle = "#bd405d";
-
-    ctx.fillRect(
-        120,
-        43,
-        280 * (
-            AD_VINCENT.bossHP /
-            AD_VINCENT.bossMaxHP
-        ),
-        9
-    );
-
-    vincentText(
-        "HP " +
-        AD_VINCENT.bossHP +
-        " / " +
-        AD_VINCENT.bossMaxHP,
-        W / 2,
-        70,
-        11
-    );
-
-    // -----------------------------------------------
-    // MENU
-    // -----------------------------------------------
-
-    if (AD_VINCENT.phase === "menu") {
-        ctx.fillStyle = "#17131f";
-        ctx.fillRect(
-            35,
-            230,
-            W - 70,
-            135
-        );
-
-        ctx.strokeStyle = "#ddd";
-
-        ctx.strokeRect(
-            35,
-            230,
-            W - 70,
-            135
-        );
-
-        const options = [
-            "FIGHT",
-            "OBSERVE",
-            "ITEM"
-        ];
-
-        options.forEach((option, i) => {
-            vincentText(
-                (i === AD_VINCENT.menu ? "> " : "  ") +
-                option,
-                100 + i * 160,
-                280,
-                14,
-                i === AD_VINCENT.menu
-                    ? "#ffe28a"
-                    : "white"
-            );
-        });
-
-        vincentText(
-            AD_VINCENT.message,
-            W / 2,
-            330,
-            11
-        );
-
-        vincentText(
-            "ARROWS = SELECT | Z = CONFIRM",
-            W / 2,
-            350,
-            10,
-            "#aaa"
-        );
-    }
-
-    // -----------------------------------------------
-    // FIGHT TIMING BAR
-    // -----------------------------------------------
-
-    if (AD_VINCENT.phase === "aim") {
-        ctx.fillStyle = "#201a2a";
-
-        ctx.fillRect(
-            45,
-            250,
-            W - 90,
-            70
-        );
-
-        ctx.strokeStyle = "#eee";
-
-        ctx.strokeRect(
-            70,
-            275,
-            380,
-            18
-        );
-
-        ctx.fillStyle = "#3d936d";
-
-        ctx.fillRect(
-            245,
-            275,
-            30,
-            18
-        );
-
-        ctx.fillStyle = "#fff";
-
-        ctx.fillRect(
-            AD_VINCENT.aimX,
-            270,
-            5,
-            28
-        );
-
-        vincentText(
-            "PRESS Z / ENTER NEAR THE CENTRE",
-            W / 2,
-            340,
-            11
-        );
-    }
-
-    // -----------------------------------------------
-    // ENEMY ATTACK AND DODGE
-    // -----------------------------------------------
-
-    if (
-        AD_VINCENT.phase === "enemy" ||
-        AD_VINCENT.phase === "dodge"
-    ) {
-        ctx.fillStyle = "#18131f";
-
-        ctx.fillRect(
-            45,
-            230,
-            W - 90,
-            140
-        );
-
-        ctx.strokeStyle = "#ddd";
-        ctx.lineWidth = 2;
-
-        ctx.strokeRect(
-            45,
-            230,
-            W - 90,
-            140
-        );
-
-        // BULLETS
-        AD_VINCENT.bullets.forEach(bullet => {
-            ctx.fillStyle = "#d7c5ff";
-
-            ctx.beginPath();
-
-            ctx.arc(
-                bullet.x,
-                bullet.y,
-                bullet.size,
-                0,
-                Math.PI * 2
-            );
-
-            ctx.fill();
-        });
-
-        // PLAYER HEART
-        ctx.fillStyle = "#ff334d";
-
-        ctx.beginPath();
-
-        ctx.moveTo(
-            AD_VINCENT.heart.x,
-            AD_VINCENT.heart.y + 7
-        );
-
-        ctx.arc(
-            AD_VINCENT.heart.x - 5,
-            AD_VINCENT.heart.y - 3,
-            6,
-            0,
-            Math.PI
-        );
-
-        ctx.arc(
-            AD_VINCENT.heart.x + 5,
-            AD_VINCENT.heart.y - 3,
-            6,
-            0,
-            Math.PI
-        );
-
-        ctx.fill();
-
-        vincentText(
-            "MOVE WITH ARROW KEYS OR WASD",
-            W / 2,
-            385,
-            10
-        );
-    }
-
-    vincentText(
-        "YOUR HP: " +
-        player.hp +
-        " / " +
-        player.maxHp,
-        W / 2,
-        415,
-        12
-    );
-}
-
-// -----------------------------------------------------
-// VICTORY
-// -----------------------------------------------------
-
-function finishVincentBattle() {
-    AD_VINCENT.active = false;
-    AD_VINCENT.mode = "finished";
-
-    paused = false;
-    battleOpen = false;
-
-    playMusic("exploration");
-
-    saveGame();
-
-    showDialogue(
-        "VINCENT",
-        "Well... that was entertaining. We shall meet again."
-    );
-}
-
-// -----------------------------------------------------
-// DRAW OVER EXISTING GAME
-// -----------------------------------------------------
-
-const AD_VINCENT_OLD_DRAW_INVENTORY = drawInventory;
+const AD_VINCENT_OLD_DRAW_INVENTORY =
+    drawInventory;
 
 drawInventory = function () {
     AD_VINCENT_OLD_DRAW_INVENTORY();
@@ -1078,46 +731,37 @@ drawInventory = function () {
     if (AD_VINCENT.mode === "story") {
         drawVincentStory();
     }
-
-    if (AD_VINCENT.mode === "battle") {
-        updateVincentBattle();
-        drawVincentBattle();
-    }
-
-    if (AD_VINCENT.mode === "victory") {
-        ctx.fillStyle = "#000";
-        ctx.fillRect(0, 0, W, H);
-
-        drawVincentSprite(
-            W / 2,
-            250,
-            130,
-            190
-        );
-
-        vincentText(
-            "VINCENT DEFEATED",
-            W / 2,
-            330,
-            20,
-            "#e5c16e"
-        );
-
-        vincentText(
-            "THE END... FOR NOW.",
-            W / 2,
-            365,
-            12
-        );
-
-        AD_VINCENT.timer++;
-
-        if (AD_VINCENT.timer > 180) {
-            finishVincentBattle();
-        }
-    }
 };
+
+
+// =====================================================
+// 17. GAME OVER CLEANUP
+// =====================================================
+
+const AD_VINCENT_OLD_GAME_OVER =
+    triggerGameOver;
+
+triggerGameOver = function () {
+    if (
+        AD_VINCENT.active &&
+        AD_VINCENT.mode === "battle"
+    ) {
+        AD_VINCENT.active = false;
+        AD_VINCENT.mode = "gameover";
+    }
+
+    AD_VINCENT_OLD_GAME_OVER();
+};
+
+
+// =====================================================
+// 18. READY
+// =====================================================
 
 console.log(
     "ALTER DUNE — VINCENT SEQUENCE LOADED"
+);
+
+console.log(
+    "VINCENT BATTLE: ORIGINAL GAME ENGINE CONNECTED"
 );
