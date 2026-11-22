@@ -9,7 +9,6 @@
    - Analysis output 1.png (loaded by script.js)
    - VINCENT.mp3
 
-   IMPORTANT:
    Vincent uses the ORIGINAL ALTER DUNE battle system.
    ===================================================== */
 
@@ -20,7 +19,6 @@
 
 if (!musicTracks.vincent) {
     musicTracks.vincent = new Audio("./VINCENT.mp3");
-
     musicTracks.vincent.loop = true;
     musicTracks.vincent.volume = 0;
     musicTracks.vincent.preload = "auto";
@@ -47,6 +45,7 @@ const AD_VINCENT = {
     bossMaxHP: 360,
 
     defeated: false,
+    failed: false,
     soundtrackStarted: false,
 
     sprite: new Image(),
@@ -159,9 +158,7 @@ function createVincentEnemy() {
         hp: AD_VINCENT.bossMaxHP,
         maxHp: AD_VINCENT.bossMaxHP,
 
-        // Damage dealt when his projectiles hit.
         damage: 6,
-
         color: "#a7a7b5",
         difficulty: 3,
 
@@ -173,14 +170,31 @@ function createVincentEnemy() {
         fleeGrace: 0,
         alerted: true,
 
-        // Extra battle information.
         phaseNumber: 1
     };
 }
 
 
 // =====================================================
-// 5. START VINCENT STORY
+// 5. GRAND HALL CHECKPOINT
+// =====================================================
+
+function saveVincentCheckpoint() {
+    checkpoint = {
+        room: "hall",
+        x: player.x,
+        y: player.y,
+        hp: player.maxHp
+    };
+
+    saveGame();
+
+    console.log("VINCENT CHECKPOINT SAVED: GRAND HALL");
+}
+
+
+// =====================================================
+// 6. START VINCENT STORY
 // =====================================================
 
 function startVincentSequence() {
@@ -202,15 +216,18 @@ function startVincentSequence() {
         return;
     }
 
+    // Save the checkpoint BEFORE the explosion.
+    saveVincentCheckpoint();
+
     AD_VINCENT.active = true;
     AD_VINCENT.mode = "story";
     AD_VINCENT.line = 0;
 
     AD_VINCENT.defeated = false;
+    AD_VINCENT.failed = false;
     AD_VINCENT.soundtrackStarted = false;
 
     AD_VINCENT.bossHP = AD_VINCENT.bossMaxHP;
-
     AD_VINCENT.enemy = createVincentEnemy();
 
     paused = true;
@@ -223,7 +240,7 @@ function startVincentSequence() {
 
 
 // =====================================================
-// 6. CONNECT TO ORIGINAL INTERACTION SYSTEM
+// 7. CONNECT TO ORIGINAL INTERACTION SYSTEM
 // =====================================================
 
 const AD_VINCENT_OLD_INTERACT = interact;
@@ -244,12 +261,8 @@ interact = function () {
 
 
 // =====================================================
-// 7. STORY INPUT
+// 8. STORY INPUT
 // =====================================================
-
-// Capture input BEFORE the original game keyboard handler.
-// This only intercepts input during Vincent's story.
-// The original battle input remains untouched.
 
 document.addEventListener("keydown", function (e) {
     if (
@@ -295,8 +308,7 @@ document.addEventListener("keydown", function (e) {
     // -----------------------------------------------
 
     if (
-        AD_VINCENT.line >=
-        AD_VINCENT_STORY.length
+        AD_VINCENT.line >= AD_VINCENT_STORY.length
     ) {
         AD_VINCENT.mode = "battle";
 
@@ -304,12 +316,10 @@ document.addEventListener("keydown", function (e) {
 
         paused = false;
 
-        // This calls the real startBattle()
-        // from script.js.
+        // Use the original ALTER DUNE battle engine.
         startBattle(AD_VINCENT.enemy);
 
-        // The original startBattle() selects normal
-        // fight music. Replace it with Vincent's music.
+        // Replace the normal fight soundtrack.
         playMusic("vincent");
 
         AD_VINCENT.soundtrackStarted = true;
@@ -318,15 +328,11 @@ document.addEventListener("keydown", function (e) {
 
 
 // =====================================================
-// 8. VINCENT'S CUSTOM PROJECTILE PATTERNS
+// 9. VINCENT'S CUSTOM PROJECTILE PATTERNS
 // =====================================================
 
-// Preserve the original projectile attack function.
 const AD_VINCENT_OLD_CREATE_ENEMY_ATTACK =
     createEnemyAttack;
-
-// Vincent gets custom attacks.
-// Every other enemy keeps its original attacks.
 
 createEnemyAttack = function (enemy) {
     if (!enemy || enemy.id !== "vincent") {
@@ -341,11 +347,10 @@ createEnemyAttack = function (enemy) {
 
     enemy.phaseNumber = phase;
 
-    const speedMultiplier = 1 + (phase - 1) * 0.35;
+    const speedMultiplier =
+        1 + (phase - 1) * 0.35;
 
-    // -----------------------------------------------
     // PATTERN 0: COSMIC RAIN
-    // -----------------------------------------------
 
     if (pattern === 0) {
         for (let i = 0; i < 8; i++) {
@@ -361,10 +366,7 @@ createEnemyAttack = function (enemy) {
         return;
     }
 
-    // -----------------------------------------------
     // PATTERN 1: AWARENESS
-    // Vincent aims a spread towards the player's heart.
-    // -----------------------------------------------
 
     if (pattern === 1) {
         const angle = Math.atan2(
@@ -387,9 +389,7 @@ createEnemyAttack = function (enemy) {
         return;
     }
 
-    // -----------------------------------------------
     // PATTERN 2: VOID WALL
-    // -----------------------------------------------
 
     if (pattern === 2) {
         const gap = Math.floor(Math.random() * 8);
@@ -409,13 +409,10 @@ createEnemyAttack = function (enemy) {
         return;
     }
 
-    // -----------------------------------------------
     // PATTERN 3: HYPER COSMIC BURST
-    // -----------------------------------------------
 
     for (let i = 0; i < 10; i++) {
-        const angle =
-            (Math.PI * 2 * i) / 10;
+        const angle = (Math.PI * 2 * i) / 10;
 
         spawnProjectile(
             W / 2,
@@ -429,10 +426,9 @@ createEnemyAttack = function (enemy) {
 
 
 // =====================================================
-// 9. VINCENT ACT DIALOGUE
+// 10. VINCENT ACT DIALOGUE
 // =====================================================
 
-// Preserve the original enemy descriptions.
 const AD_VINCENT_OLD_DESCRIPTION =
     getEnemyDescription;
 
@@ -445,7 +441,6 @@ getEnemyDescription = function (enemy) {
 };
 
 
-// Preserve the original enemy TALK dialogue.
 const AD_VINCENT_OLD_TALK = getEnemyTalk;
 
 getEnemyTalk = function (enemy) {
@@ -457,7 +452,6 @@ getEnemyTalk = function (enemy) {
 };
 
 
-// Preserve the original enemy JOKE dialogue.
 const AD_VINCENT_OLD_JOKE = getEnemyJoke;
 
 getEnemyJoke = function (enemy) {
@@ -470,7 +464,7 @@ getEnemyJoke = function (enemy) {
 
 
 // =====================================================
-// 10. VINCENT CANNOT BE SPARED OR ESCAPED
+// 11. VINCENT CANNOT BE SPARED OR ESCAPED
 // =====================================================
 
 const AD_VINCENT_OLD_SPARE = attemptSpare;
@@ -491,9 +485,7 @@ const AD_VINCENT_OLD_FLEE = attemptFlee;
 
 attemptFlee = function () {
     if (battle.enemy?.id === "vincent") {
-        battle.message =
-            "There is nowhere to run.";
-
+        battle.message = "There is nowhere to run!";
         beginEnemyTurn();
         return;
     }
@@ -503,10 +495,9 @@ attemptFlee = function () {
 
 
 // =====================================================
-// 11. VINCENT DEFEAT EVENT
+// 12. VINCENT DEFEAT EVENT
 // =====================================================
 
-// Preserve the original defeat handler.
 const AD_VINCENT_OLD_HANDLE_DEFEAT =
     handleEnemyDefeat;
 
@@ -520,14 +511,16 @@ handleEnemyDefeat = function (enemy) {
     enemy.active = false;
 
     AD_VINCENT.defeated = true;
+    AD_VINCENT.failed = false;
     AD_VINCENT.active = false;
     AD_VINCENT.mode = "finished";
-   localStorage.setItem(
-    "adVincentDefeated",
-    "true"
-);
 
-    // Use the original battle-ending function.
+    localStorage.setItem(
+        "adVincentDefeated",
+        "true"
+    );
+
+    // Use the original battle-ending system.
     finishBattle(true);
 
     showDialogue(
@@ -538,7 +531,7 @@ handleEnemyDefeat = function (enemy) {
 
 
 // =====================================================
-// 12. VINCENT SPRITE DRAWING
+// 13. VINCENT SPRITE DRAWING
 // =====================================================
 
 function drawVincentSprite(x, y, width, height) {
@@ -564,22 +557,13 @@ function drawVincentSprite(x, y, width, height) {
 
 
 // =====================================================
-// 13. ORIGINAL BATTLE SCREEN + VINCENT SPRITE
+// 14. ORIGINAL BATTLE SCREEN + VINCENT SPRITE
 // =====================================================
 
-// Preserve the original battle renderer.
 const AD_VINCENT_OLD_DRAW_BATTLE = drawBattle;
 
 drawBattle = function () {
-    // Draw the COMPLETE original battle screen:
-    // - HP bar
-    // - FIGHT / ACT / ITEM / MERCY
-    // - Attack timing bar
-    // - Dodge arena
-    // - Player sprite
-    // - Projectiles
-    // - Battle messages
-
+    // Draw the complete original battle screen first.
     AD_VINCENT_OLD_DRAW_BATTLE();
 
     if (
@@ -589,8 +573,7 @@ drawBattle = function () {
         return;
     }
 
-    // Vincent appears in the upper-right of
-    // the original battle screen.
+    // Draw Vincent on top of the original battle screen.
     drawVincentSprite(
         W - 55,
         88,
@@ -601,7 +584,7 @@ drawBattle = function () {
 
 
 // =====================================================
-// 14. STORY TEXT HELPER
+// 15. STORY TEXT HELPER
 // =====================================================
 
 function vincentText(
@@ -620,7 +603,7 @@ function vincentText(
 
 
 // =====================================================
-// 15. STORY DRAWING
+// 16. STORY DRAWING
 // =====================================================
 
 function drawVincentStory() {
@@ -669,23 +652,11 @@ function drawVincentStory() {
 
     // DIALOGUE BOX
     ctx.fillStyle = "#080808";
-
-    ctx.fillRect(
-        15,
-        H - 105,
-        W - 30,
-        90
-    );
+    ctx.fillRect(15, H - 105, W - 30, 90);
 
     ctx.strokeStyle = "#dedede";
     ctx.lineWidth = 2;
-
-    ctx.strokeRect(
-        15,
-        H - 105,
-        W - 30,
-        90
-    );
+    ctx.strokeRect(15, H - 105, W - 30, 90);
 
     vincentText(
         scene.speaker,
@@ -717,12 +688,8 @@ function drawVincentStory() {
 
 
 // =====================================================
-// 16. OVERLAY STORY ON EXISTING GAME
+// 17. OVERLAY STORY ON EXISTING GAME
 // =====================================================
-
-// The original battle screen does NOT need to be
-// redrawn here. It is already drawn by gameLoop()
-// through the original drawBattle() function.
 
 const AD_VINCENT_OLD_DRAW_INVENTORY =
     drawInventory;
@@ -739,7 +706,7 @@ drawInventory = function () {
 
 
 // =====================================================
-// 17. GAME OVER CLEANUP
+// 18. PLAYER DEFEAT — RESTORE GRAND HALL
 // =====================================================
 
 const AD_VINCENT_OLD_GAME_OVER =
@@ -750,8 +717,35 @@ triggerGameOver = function () {
         AD_VINCENT.active &&
         AD_VINCENT.mode === "battle"
     ) {
+        AD_VINCENT.failed = true;
         AD_VINCENT.active = false;
         AD_VINCENT.mode = "gameover";
+
+        // Restore the castle.
+        castleDestroyed = false;
+
+        // Return TNT so the event can be attempted again.
+        if (!hasItem("tnt")) {
+            addItem("tnt");
+        }
+
+        // Preserve the Grand Hall checkpoint.
+        checkpoint = {
+            room: "hall",
+            x: checkpoint.x,
+            y: checkpoint.y,
+            hp: player.maxHp
+        };
+
+        currentRoom = "hall";
+
+        // The original game-over screen will handle
+        // the player's retry button.
+        saveGame();
+
+        console.log(
+            "VINCENT DEFEAT: GRAND HALL RESTORED"
+        );
     }
 
     AD_VINCENT_OLD_GAME_OVER();
@@ -759,31 +753,91 @@ triggerGameOver = function () {
 
 
 // =====================================================
-// 18. READY
+// 19. RETRY — RETURN TO GRAND HALL
 // =====================================================
 
-console.log(
-    "ALTER DUNE — VINCENT SEQUENCE LOADED"
-);
+const AD_VINCENT_OLD_RETRY_CHECKPOINT =
+    retryCheckpoint;
 
-console.log(
-    "VINCENT BATTLE: ORIGINAL GAME ENGINE CONNECTED"
-);
+retryCheckpoint = function () {
+    const wasVincentDefeat = AD_VINCENT.failed;
+
+    AD_VINCENT_OLD_RETRY_CHECKPOINT();
+
+    if (wasVincentDefeat) {
+        castleDestroyed = false;
+        currentRoom = "hall";
+
+        if (!hasItem("tnt")) {
+            addItem("tnt");
+        }
+
+        AD_VINCENT.active = false;
+        AD_VINCENT.mode = "story";
+        AD_VINCENT.line = 0;
+
+        AD_VINCENT.failed = false;
+        AD_VINCENT.defeated = false;
+        AD_VINCENT.soundtrackStarted = false;
+
+        AD_VINCENT.bossHP = AD_VINCENT.bossMaxHP;
+        AD_VINCENT.enemy = createVincentEnemy();
+
+        battle.enemy = null;
+        battleOpen = false;
+
+        paused = false;
+        gameOver = false;
+
+        saveGame();
+        updateLocation();
+
+        console.log(
+            "VINCENT RETRY: PLAYER RETURNED TO GRAND HALL"
+        );
+    }
+};
+
 
 // =====================================================
-// 19. RESUME VINCENT AFTER PAGE RELOAD
+// 20. RESET VINCENT DEFEAT FLAG ON NEW GAME
 // =====================================================
 
-const AD_VINCENT_DEFEATED_KEY = "adVincentDefeated";
+const AD_VINCENT_OLD_START_NEW_GAME =
+    startNewGame;
+
+startNewGame = function () {
+    localStorage.removeItem("adVincentDefeated");
+
+    AD_VINCENT.active = false;
+    AD_VINCENT.mode = "story";
+    AD_VINCENT.line = 0;
+
+    AD_VINCENT.defeated = false;
+    AD_VINCENT.failed = false;
+    AD_VINCENT.soundtrackStarted = false;
+
+    AD_VINCENT.bossHP = AD_VINCENT.bossMaxHP;
+    AD_VINCENT.enemy = null;
+
+    AD_VINCENT_OLD_START_NEW_GAME();
+};
+
+
+// =====================================================
+// 21. RESUME STORY AFTER PAGE RELOAD
+// =====================================================
+
+// The explosion is saved in script.js.
+// The temporary story state is not.
+// Resume at the flash if the player reloads mid-event.
 
 if (
     castleDestroyed &&
-    localStorage.getItem(AD_VINCENT_DEFEATED_KEY) !== "true"
+    localStorage.getItem("adVincentDefeated") !== "true"
 ) {
     AD_VINCENT.active = true;
     AD_VINCENT.mode = "story";
-
-    // Resume at the explosion/void transition.
     AD_VINCENT.line = 5;
 
     AD_VINCENT.bossHP = AD_VINCENT.bossMaxHP;
@@ -798,5 +852,20 @@ if (
 
     keys = {};
 
-    console.log("VINCENT STORY RESUMED AFTER RELOAD");
+    console.log(
+        "VINCENT STORY RESUMED AFTER RELOAD"
+    );
 }
+
+
+// =====================================================
+// 22. READY
+// =====================================================
+
+console.log(
+    "ALTER DUNE — VINCENT SEQUENCE LOADED"
+);
+
+console.log(
+    "VINCENT BATTLE: ORIGINAL GAME ENGINE CONNECTED"
+);
