@@ -2,7 +2,12 @@
 /* =====================================================
    ALTER DUNE — VINCENT SEQUENCE
    Grand Hall TNT Event + Vincent Boss Battle
-   Requires: script.js and vincentsprite.png
+
+   Requires:
+   - script.js
+   - vincentsprite.png
+   - analysis output 1.png
+
    Soundtrack: VINCENT.mp3
    ===================================================== */
 
@@ -17,9 +22,27 @@ if (!musicTracks.vincent) {
     musicTracks.vincent.preload = "auto";
 
     musicTracks.vincent.addEventListener("error", () => {
-        console.error("Could not load Vincent soundtrack:", musicTracks.vincent.src);
+        console.error(
+            "Could not load Vincent soundtrack:",
+            musicTracks.vincent.src
+        );
     });
 }
+
+// -----------------------------------------------------
+// PLAYER SPRITE REGISTRATION
+// -----------------------------------------------------
+
+const AD_PLAYER_SPRITE = new Image();
+
+AD_PLAYER_SPRITE.src = "./analysis output 1.png";
+
+AD_PLAYER_SPRITE.addEventListener("error", () => {
+    console.error(
+        "Could not load player sprite:",
+        AD_PLAYER_SPRITE.src
+    );
+});
 
 // -----------------------------------------------------
 // BOSS STATE
@@ -34,7 +57,6 @@ const AD_VINCENT = {
     bossHP: 360,
     bossMaxHP: 360,
 
-    // IMPORTANT: phase is a STRING, not a number.
     phase: "menu",
     phaseNumber: 1,
 
@@ -123,7 +145,7 @@ function startVincentSequence() {
     battleOpen = false;
     keys = {};
 
-    // Music changes to Vincent's track when his sprite appears.
+    // Vincent's soundtrack starts when his sprite appears.
 }
 
 // -----------------------------------------------------
@@ -457,26 +479,24 @@ function drawVincentSprite(x, y, width, height) {
 
 // -----------------------------------------------------
 // PLAYER SPRITE FOR BOSS BATTLE
-// Uses the same appearance as script.js drawPlayer().
+// Loads the actual image: analysis output 1.png
 // -----------------------------------------------------
 
 function drawVincentPlayerSprite(x, y) {
-    ctx.fillStyle = "#4a8ac7";
-    ctx.fillRect(x - 9, y - 5, 18, 17);
-
-    ctx.fillStyle = "#e8b68d";
-    ctx.fillRect(x - 8, y - 16, 16, 12);
-
-    ctx.fillStyle = "#392b27";
-    ctx.fillRect(x - 9, y - 18, 18, 5);
-
-    ctx.fillStyle = "#171321";
-    ctx.fillRect(x - 5, y - 12, 2, 2);
-    ctx.fillRect(x + 3, y - 12, 2, 2);
-
-    ctx.fillStyle = "#302a43";
-    ctx.fillRect(x - 7, y + 11, 5, 6);
-    ctx.fillRect(x + 3, y + 11, 5, 6);
+    if (
+        AD_PLAYER_SPRITE.complete &&
+        AD_PLAYER_SPRITE.naturalWidth > 0
+    ) {
+        ctx.drawImage(
+            AD_PLAYER_SPRITE,
+            x - 24,
+            y - 24,
+            48,
+            48
+        );
+    } else {
+        vincentText("LOADING PLAYER...", x, y, 10, "#ffffff");
+    }
 
     vincentText("YOU", x, y + 35, 10, "#ffffff");
 }
@@ -545,7 +565,7 @@ function drawVincentBattle() {
     // VINCENT
     drawVincentSprite(W / 2, 210, 125, 180);
 
-    // PLAYER CHARACTER
+    // ACTUAL PLAYER IMAGE
     drawVincentPlayerSprite(95, 205);
 
     vincentText("VINCENT", W / 2, 25, 18, "#eee");
