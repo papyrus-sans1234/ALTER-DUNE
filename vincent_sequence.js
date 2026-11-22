@@ -1293,14 +1293,14 @@ drawEnding = function () {
     ctx.fillStyle = "#000000";
     ctx.fillRect(0, 0, W, H);
 
-    ctx.fillStyle = "#8b0000";
+    ctx.fillStyle = "#777777";
     ctx.font = "bold 28px monospace";
     ctx.textAlign = "center";
-    ctx.fillText("...", W / 2, H / 2 - 20);
+    ctx.fillText("ALTERDUNE", W / 2, H / 2 - 20);
 
-    ctx.fillStyle = "#777777";
+    ctx.fillStyle = "#8b0000";
     ctx.font = "16px monospace";
-    ctx.fillText("...", W / 2, H / 2 + 20);
+    ctx.fillText("YOU KILLED EVERYONE", W / 2, H / 2 + 20);
 
     ctx.textAlign = "left";
 };
