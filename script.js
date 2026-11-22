@@ -1983,7 +1983,9 @@ document.addEventListener("keydown", e => {
         return;
     }
 
-    if (paused || !gameRunning) return;
+    if (!gameRunning) return;
+
+if (paused && !castleDestroyed) return;
 
     if (key === "i" && !e.repeat) {
         inventoryOpen = !inventoryOpen;
