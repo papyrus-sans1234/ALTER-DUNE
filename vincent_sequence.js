@@ -59,8 +59,8 @@ const AD_VINCENT = {
     mode: "story",
     line: 0,
 
-    bossHP: 400,
-    bossMaxHP: 400,
+    bossHP: 250,
+    bossMaxHP: 250,
 
     defeated: false,
     failed: false,
