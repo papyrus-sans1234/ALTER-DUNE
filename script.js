@@ -2685,8 +2685,9 @@ function changeBattleSelection(direction) {
 function handleBattleInput(key) {
     if (!battleOpen) return;
 
-    if (battle.phase === "dodge") return;
-    if (battle.phase === "attack") return;
+    
+    if (battle.phase !== "menu") return;
+
 
     if (battle.menu === "item") {
         if (key === "arrowleft" || key === "a") {
