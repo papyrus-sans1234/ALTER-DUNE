@@ -592,49 +592,41 @@ createEnemyAttack = function (enemy) {
     }
 };
 
-           
+
+
 // =====================================================
-// 9B. VINCENT MULTI-ATTACK SYSTEM
+// 9B. VINCENT MULTI-ATTACK PER ROUND
 // =====================================================
 
-const AD_VINCENT_OLD_UPDATE_BATTLE = updateBattle;
+// Preserve the existing six-pattern attack system.
+const AD_VINCENT_SINGLE_ATTACK = createEnemyAttack;
 
-updateBattle = function () {
+createEnemyAttack = function (enemy) {
 
-    // Run the original battle engine first.
-    AD_VINCENT_OLD_UPDATE_BATTLE();
-
-    if (
-        !battleOpen ||
-        battle.phase !== "dodge" ||
-        battle.enemy?.id !== "vincent"
-    ) {
-        return;
+    if (!enemy || enemy.id !== "vincent") {
+        return AD_VINCENT_SINGLE_ATTACK(enemy);
     }
 
-    const timer = battle.bulletTimer;
-    const hp = battle.enemy.hp;
-    const maxHP = battle.enemy.maxHp;
+    const maxHP = enemy.maxHp || 360;
 
     const phase =
-        hp <= maxHP / 3 ? 3 :
-        hp <= (maxHP * 2) / 3 ? 2 : 1;
+        enemy.hp <= maxHP / 3 ? 3 :
+        enemy.hp <= (maxHP * 2) / 3 ? 2 : 1;
 
-    // SECOND ATTACK — EVERY PHASE
-    if (timer === 80) {
-        createEnemyAttack(battle.enemy);
+    // Number of complete attack patterns per round.
+    const attacksPerRound = phase;
+
+    for (let i = 0; i < attacksPerRound; i++) {
+        AD_VINCENT_SINGLE_ATTACK(enemy);
     }
 
-    // THIRD ATTACK — PHASE 2 AND 3
-    if (phase >= 2 && timer === 140) {
-        createEnemyAttack(battle.enemy);
-    }
-
-    // FOURTH ATTACK — PHASE 3
-    if (phase >= 3 && timer === 200) {
-        createEnemyAttack(battle.enemy);
-    }
+    console.log(
+        "VINCENT ATTACK ROUND:",
+        attacksPerRound,
+        "attack patterns"
+    );
 };
+
 
 
 
