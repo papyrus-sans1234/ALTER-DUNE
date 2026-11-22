@@ -1392,3 +1392,30 @@ adPlayVincentLaugh = function () {
 console.log("VINCENT FINAL PSYCHOLOGICAL ATTACK LOADED");
 
 
+/* =====================================================
+   ALTER DUNE — STOP EXPLORATION MUSIC AFTER TNT EVENT
+   ===================================================== */
+
+const AD_OLD_START_VINCENT_SEQUENCE = startVincentSequence;
+
+startVincentSequence = function () {
+    if (typeof musicTracks !== "undefined" && musicTracks.exploration) {
+        musicTracks.exploration.pause();
+        musicTracks.exploration.currentTime = 0;
+    }
+
+    AD_OLD_START_VINCENT_SEQUENCE();
+};
+
+// Prevent exploration music from restarting after the TNT event.
+const AD_OLD_PLAY_MUSIC = playMusic;
+
+playMusic = function (track) {
+    if (castleDestroyed && track === "exploration") {
+        return;
+    }
+
+    AD_OLD_PLAY_MUSIC(track);
+};
+
+console.log("EXPLORATION MUSIC DISABLED AFTER TNT EVENT");
