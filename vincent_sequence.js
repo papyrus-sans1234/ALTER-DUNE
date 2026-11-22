@@ -1228,8 +1228,8 @@ const AD_OLD_INTERACT_VOID = interact;
 
 interact = function () {
     if (castleDestroyed) {
-        const playerCenterX = player.x + player.width / 2;
-        const playerCenterY = player.y + player.height / 2;
+        const playerCenterX = player.x + TILE / 2;
+        const playerCenterY = player.y + TILE / 2;
 
         const doorCenterX =
             AD_GENOCIDE.doorX * TILE + TILE / 2;
