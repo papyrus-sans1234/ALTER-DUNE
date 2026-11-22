@@ -962,7 +962,7 @@ startNewGame = function () {
 
 
 // =====================================================
-// 21. RESUME STORY AFTER PAGE RELOAD
+// 21. RESUME VINCENT AFTER PAGE RELOAD — FIXED
 // =====================================================
 
 if (
@@ -971,24 +971,31 @@ if (
 ) {
     AD_VINCENT.active = true;
     AD_VINCENT.mode = "story";
-    AD_VINCENT.line = 5;
+
+    // Resume at Vincent's appearance, not the empty void.
+    AD_VINCENT.line = 12;
 
     AD_VINCENT.bossHP = AD_VINCENT.bossMaxHP;
     AD_VINCENT.enemy = createVincentEnemy();
 
     AD_VINCENT.soundtrackStarted = false;
 
-    paused = true;
+    // Make sure the game can draw and accept input.
+    paused = false;
     battleOpen = false;
     dialogueOpen = false;
     inventoryOpen = false;
 
     keys = {};
 
+    // Ensure the player is in the intended encounter room.
+    currentRoom = "hall";
+
     console.log(
-        "VINCENT STORY RESUMED AFTER RELOAD"
+        "VINCENT RESUMED: APPEARANCE SCENE"
     );
 }
+
 
 
 // =====================================================
