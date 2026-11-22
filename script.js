@@ -4964,3 +4964,42 @@ handleEnemyDefeat = function (enemy) {
 };
 
 console.log("SPEAR REWARD SYSTEM LOADED");
+
+
+/* =====================================================
+   ALTER DUNE — TNT EXPLOSION HP UPGRADE
+   MAX HP: 30 → 50
+   FULL HEAL: 50 / 50
+   ===================================================== */
+
+const AD_EXPLOSION_HP_KEY = "adExplosionHpUpgradeApplied";
+
+// Detect the explosion and apply the upgrade once.
+const AD_EXPLOSION_OLD_GAME_LOOP = gameLoop;
+
+gameLoop = function () {
+
+    if (
+        castleDestroyed &&
+        localStorage.getItem(AD_EXPLOSION_HP_KEY) !== "true"
+    ) {
+        player.maxHp = 50;
+        player.hp = 50;
+
+        localStorage.setItem(AD_EXPLOSION_HP_KEY, "true");
+
+        console.log("EXPLOSION UPGRADE: HP RESTORED TO 50/50");
+    }
+
+    AD_EXPLOSION_OLD_GAME_LOOP();
+};
+
+// Reset the upgrade when starting a completely new game.
+const AD_EXPLOSION_OLD_START_NEW_GAME = startNewGame;
+
+startNewGame = function () {
+    localStorage.removeItem(AD_EXPLOSION_HP_KEY);
+    return AD_EXPLOSION_OLD_START_NEW_GAME();
+};
+
+console.log("EXPLOSION HP UPGRADE LOADED");
