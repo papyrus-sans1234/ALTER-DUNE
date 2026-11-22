@@ -4666,7 +4666,7 @@ const AD_SPRITE_FILES = {
     prisoner: "Analysis output 8.png",
 
     guard: "Analysis output 10.png",
-    warrior: "HUNTERSPRITE.png",
+    warrior: "Armored Hunter with Crystal Spear.png",
     king: "Analysis output 12.png"
 };
 
