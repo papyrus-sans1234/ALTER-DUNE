@@ -988,6 +988,7 @@ function startNewGame() {
     prisonerFollower.y = 180;
     royalEndingComplete = false;
 	castleDestroyed = false;
+	localStorage.removeItem("adVincentDefeated");
 
     checkpoint = {
         room: "entrance",
