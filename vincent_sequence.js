@@ -1304,3 +1304,91 @@ drawEnding = function () {
     ctx.textAlign = "left";
 };
 
+
+/* =====================================================
+   ALTER DUNE — VINCENT'S FINAL PSYCHOLOGICAL ATTACK
+   Three-stage genocide ending
+   ===================================================== */
+
+// Reset ending stages when the ending begins.
+const AD_FINAL_OLD_START_GENOCIDE = adStartGenocideEnding;
+
+adStartGenocideEnding = function () {
+    if (AD_GENOCIDE.active) return;
+
+    AD_GENOCIDE.stage = "main";
+
+    AD_FINAL_OLD_START_GENOCIDE();
+};
+
+// Replace the ending renderer.
+const AD_FINAL_OLD_DRAW_ENDING = drawEnding;
+
+drawEnding = function () {
+    if (!AD_GENOCIDE.active) {
+        AD_FINAL_OLD_DRAW_ENDING();
+        return;
+    }
+
+    ctx.fillStyle = "#000000";
+    ctx.fillRect(0, 0, W, H);
+
+    // STAGE 1: ORIGINAL ENDING
+    if (AD_GENOCIDE.stage === "main") {
+        ctx.fillStyle = "#777777";
+        ctx.font = "bold 28px monospace";
+        ctx.textAlign = "center";
+        ctx.fillText("ALTERDUNE", W / 2, H / 2 - 20);
+
+        ctx.fillStyle = "#8b0000";
+        ctx.font = "16px monospace";
+        ctx.fillText(
+            "YOU KILLED EVERYONE",
+            W / 2,
+            H / 2 + 20
+        );
+    }
+
+    // STAGE 2: COMPLETE DARKNESS
+    else if (AD_GENOCIDE.stage === "black") {
+        // Nothing is displayed.
+    }
+
+    // STAGE 3: VINCENT'S FINAL MESSAGE
+    else if (AD_GENOCIDE.stage === "final") {
+        ctx.fillStyle = "#8b0000";
+        ctx.font = "bold 19px monospace";
+        ctx.textAlign = "center";
+
+        ctx.fillText(
+            "BUT YOU ALREADY KNEW THAT.",
+            W / 2,
+            H / 2
+        );
+    }
+
+    ctx.textAlign = "left";
+};
+
+// Schedule the two transitions.
+const AD_FINAL_OLD_PLAY_LAUGH = adPlayVincentLaugh;
+
+adPlayVincentLaugh = function () {
+    AD_FINAL_OLD_PLAY_LAUGH();
+
+    setTimeout(() => {
+        if (AD_GENOCIDE.active) {
+            AD_GENOCIDE.stage = "black";
+        }
+    }, 3500);
+
+    setTimeout(() => {
+        if (AD_GENOCIDE.active) {
+            AD_GENOCIDE.stage = "final";
+        }
+    }, 6000);
+};
+
+console.log("VINCENT FINAL PSYCHOLOGICAL ATTACK LOADED");
+
+
