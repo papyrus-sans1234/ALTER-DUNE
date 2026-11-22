@@ -35,6 +35,12 @@ let endingFade = 0;
 let prisonerRescued = false;
 const prisonerFollower = { x: 150, y: 180, active: false };
 let royalEndingComplete = false;
+let castleDestroyed = false;
+
+const AD_DESTROYED_MAP = Array.from(
+    { length: 14 },
+    () => ".".repeat(20)
+);
 
 let keys = {};
 let currentRoom = "entrance";
@@ -830,7 +836,8 @@ function saveGame() {
         sleepyGuard,
         exploredRooms,
         prisonerRescued,
-        royalEndingComplete
+        royalEndingComplete,
+		castleDestroyed
     };
 
     localStorage.setItem("tarboozSave", JSON.stringify(data));
@@ -857,6 +864,7 @@ function loadGame() {
         equippedItem = data.equippedItem || null;
         openedChests = data.openedChests || [];
         checkpoint = data.checkpoint || checkpoint;
+		castleDestroyed = Boolean(data.castleDestroyed);
 
         if (Array.isArray(data.enemies)) {
             enemies = data.enemies;
@@ -906,6 +914,21 @@ function loadGame() {
             }
         });
 
+		// RESTORE TNT FROM OLD SAVES IF IT WAS CONSUMED
+// BEFORE THE EXPLOSION WAS ACTUALLY SAVED.
+
+const restoreTNT = Boolean(
+    king &&
+    king.defeated &&
+    openedChests.includes("royal_1") &&
+    !castleDestroyed &&
+    !hasItem("tnt")
+);
+
+if (restoreTNT) {
+    addItem("tnt");
+}
+
         selectedInventoryIndex = 0;
 
         unlockHunterIfReady();
@@ -914,6 +937,9 @@ function loadGame() {
         const safe = findSafeSpawn(player.x, player.y);
         player.x = safe.x;
         player.y = safe.y;
+		        if (restoreTNT) {
+            saveGame();
+        }
 
     } catch (err) {
         console.error("Save loading error:", err);
@@ -961,6 +987,7 @@ function startNewGame() {
     prisonerFollower.x = 150;
     prisonerFollower.y = 180;
     royalEndingComplete = false;
+	castleDestroyed = false;
 
     checkpoint = {
         room: "entrance",
@@ -2037,12 +2064,17 @@ function getRoom() {
 }
 
 function getMap() {
-    return getRoom().map;
+    return castleDestroyed ? AD_DESTROYED_MAP : getRoom().map;
 }
 
 function updateLocation() {
     const el = document.getElementById("locationName");
-    if (el) el.textContent = getRoom().name;
+
+    if (el) {
+        el.textContent = castleDestroyed
+            ? "THE VOID"
+            : getRoom().name;
+    }
 }
 
 function distance(a, b) {
@@ -2216,6 +2248,13 @@ function wakeSleepyGuardIfReady() {
 // =====================================================
 
 function interact() {
+        if (castleDestroyed) {
+        showDialogue(
+            "THE VOID",
+            "There is nothing left here."
+        );
+        return;
+    }
     if (
         currentRoom === "exit" &&
         distance(player, exitDoorPosition) < 65
@@ -4436,6 +4475,35 @@ function drawInventory() {
 // GAME LOOP
 // =====================================================
 
+function drawDestroyedCastle() {
+    ctx.fillStyle = "#050505";
+    ctx.fillRect(0, 0, W, H);
+
+    // Rubble scattered across the ruined castle.
+    ctx.fillStyle = "#292929";
+
+    const rubble = [
+        [35, 65, 75, 24],
+        [145, 115, 42, 38],
+        [260, 55, 90, 22],
+        [390, 145, 55, 32],
+        [510, 70, 65, 25],
+        [80, 260, 55, 35],
+        [300, 290, 85, 25],
+        [465, 250, 60, 40]
+    ];
+
+    rubble.forEach(([x, y, width, height]) => {
+        ctx.fillRect(x, y, width, height);
+    });
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 20px monospace";
+    ctx.textAlign = "center";
+    ctx.fillText("THE CASTLE HAS FALLEN", W / 2, 35);
+    ctx.textAlign = "left";
+}
+
 function startLoop() {
     if (loopStarted) return;
 
@@ -4456,11 +4524,14 @@ function gameLoop() {
         return;
     }
 
-    if (!paused && !gameOver) {
+        if (!paused && !gameOver) {
         if (!battleOpen) {
             updatePlayer();
-            updatePrisonerFollower();
-            updateEnemies();
+
+            if (!castleDestroyed) {
+                updatePrisonerFollower();
+                updateEnemies();
+            }
         } else {
             updateBattle();
         }
@@ -4469,15 +4540,21 @@ function gameLoop() {
     updateCamera();
     ctx.clearRect(0, 0, W, H);
 
-    if (!battleOpen) {
-        drawMap();
-        drawFurniture();
-        drawChests();
-        drawNPCs();
-        drawEnemies();
-        drawPlayer();
-        drawMiniMap();
-        drawInventory();
+	    if (!battleOpen) {
+        if (castleDestroyed) {
+            drawDestroyedCastle();
+            drawPlayer();
+            drawInventory();
+        } else {
+            drawMap();
+            drawFurniture();
+            drawChests();
+            drawNPCs();
+            drawEnemies();
+            drawPlayer();
+            drawMiniMap();
+            drawInventory();
+        }
     } else {
         drawBattle();
     }
