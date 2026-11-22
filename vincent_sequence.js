@@ -522,6 +522,10 @@ handleEnemyDefeat = function (enemy) {
     AD_VINCENT.defeated = true;
     AD_VINCENT.active = false;
     AD_VINCENT.mode = "finished";
+   localStorage.setItem(
+    "adVincentDefeated",
+    "true"
+);
 
     // Use the original battle-ending function.
     finishBattle(true);
@@ -765,3 +769,34 @@ console.log(
 console.log(
     "VINCENT BATTLE: ORIGINAL GAME ENGINE CONNECTED"
 );
+
+// =====================================================
+// 19. RESUME VINCENT AFTER PAGE RELOAD
+// =====================================================
+
+const AD_VINCENT_DEFEATED_KEY = "adVincentDefeated";
+
+if (
+    castleDestroyed &&
+    localStorage.getItem(AD_VINCENT_DEFEATED_KEY) !== "true"
+) {
+    AD_VINCENT.active = true;
+    AD_VINCENT.mode = "story";
+
+    // Resume at the explosion/void transition.
+    AD_VINCENT.line = 5;
+
+    AD_VINCENT.bossHP = AD_VINCENT.bossMaxHP;
+    AD_VINCENT.enemy = createVincentEnemy();
+
+    AD_VINCENT.soundtrackStarted = false;
+
+    paused = true;
+    battleOpen = false;
+    dialogueOpen = false;
+    inventoryOpen = false;
+
+    keys = {};
+
+    console.log("VINCENT STORY RESUMED AFTER RELOAD");
+}
