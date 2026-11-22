@@ -59,8 +59,8 @@ const AD_VINCENT = {
     mode: "story",
     line: 0,
 
-    bossHP: 500,
-    bossMaxHP: 500,
+    bossHP: 400,
+    bossMaxHP: 400,
 
     defeated: false,
     failed: false,
@@ -1490,3 +1490,390 @@ loadGame = function () {
 
 console.log("KING DEFEAT / RETRY FIX LOADED");
 
+
+/* =====================================================
+   ALTER DUNE — VINCENT ANTI-CAMPING ATTACK SYSTEM
+   Full arena coverage + changing attack waves
+   ===================================================== */
+
+// -----------------------------------------------------
+// RESET ATTACK DURATION FOR EACH NEW TURN
+// -----------------------------------------------------
+
+const AD_VINCENT_COVER_OLD_BEGIN_TURN = beginEnemyTurn;
+
+beginEnemyTurn = function () {
+    if (battle.enemy?.id === "vincent") {
+        battle.bulletDuration = 240;
+
+        AD_VINCENT_WAVES.active = false;
+        AD_VINCENT_WAVES.wave = 0;
+        AD_VINCENT_WAVES.total = 0;
+    }
+
+    AD_VINCENT_COVER_OLD_BEGIN_TURN();
+};
+
+
+// -----------------------------------------------------
+// HELPER: FIRE A PROJECTILE TOWARD THE PLAYER
+// -----------------------------------------------------
+
+function adVincentAimProjectile(
+    fromX,
+    fromY,
+    targetX,
+    targetY,
+    projectileSpeed = 3.5,
+    size = 9
+) {
+    const angle = Math.atan2(
+        targetY - fromY,
+        targetX - fromX
+    );
+
+    spawnProjectile(
+        fromX,
+        fromY,
+        Math.cos(angle) * projectileSpeed,
+        Math.sin(angle) * projectileSpeed,
+        size
+    );
+}
+
+
+// -----------------------------------------------------
+// REPLACE VINCENT'S ATTACK GENERATOR
+// -----------------------------------------------------
+
+createEnemyAttack = function (enemy) {
+
+    if (!enemy || enemy.id !== "vincent") {
+        return AD_VINCENT_OLD_CREATE_ENEMY_ATTACK(enemy);
+    }
+
+    const phase =
+        enemy.hp <= 120 ? 3 :
+        enemy.hp <= 240 ? 2 : 1;
+
+    enemy.phaseNumber = phase;
+
+    // Each wave uses a different pattern.
+    const pattern =
+        (AD_VINCENT_WAVES.pattern +
+         AD_VINCENT_WAVES.wave) % 6;
+
+    const heart = battle.heart;
+
+    const speedMultiplier = [
+        2.7,
+        3.1,
+        3.5
+    ][phase - 1];
+
+    const speed = value => value * speedMultiplier / 3;
+
+
+    // -------------------------------------------------
+    // PATTERN 0: COSMIC DOWNPOUR
+    // Projectiles cover the entire horizontal arena.
+    // -------------------------------------------------
+
+    if (pattern === 0) {
+
+        const count = phase === 1 ? 11 : phase === 2 ? 13 : 15;
+
+        for (let i = 0; i < count; i++) {
+
+            const x =
+                40 + i * ((W - 80) / (count - 1));
+
+            spawnProjectile(
+                x,
+                88 + (i % 2) * 18,
+                (i % 2 === 0 ? 0.25 : -0.25),
+                speed(3.2),
+                9
+            );
+        }
+
+        // Additional pressure on both sides.
+        for (let i = 0; i < 4; i++) {
+            const y = 115 + i * 65;
+
+            spawnProjectile(
+                45,
+                y,
+                speed(2.8),
+                0,
+                9
+            );
+
+            spawnProjectile(
+                W - 45,
+                y,
+                -speed(2.8),
+                0,
+                9
+            );
+        }
+
+        return;
+    }
+
+
+    // -------------------------------------------------
+    // PATTERN 1: NO SAFE CORNER
+    // Attacks aimed from all four corners.
+    // -------------------------------------------------
+
+    if (pattern === 1) {
+
+        const corners = [
+            [45, 90],
+            [W - 45, 90],
+            [45, 335],
+            [W - 45, 335]
+        ];
+
+        for (const [x, y] of corners) {
+
+            adVincentAimProjectile(
+                x,
+                y,
+                heart.x,
+                heart.y,
+                speed(4.0),
+                10
+            );
+        }
+
+        // Extra projectiles from the sides.
+        for (let i = 0; i < 3; i++) {
+
+            const y = 115 + i * 100;
+
+            adVincentAimProjectile(
+                45,
+                y,
+                heart.x,
+                heart.y,
+                speed(3.4),
+                9
+            );
+
+            adVincentAimProjectile(
+                W - 45,
+                y,
+                heart.x,
+                heart.y,
+                speed(3.4),
+                9
+            );
+        }
+
+        return;
+    }
+
+
+    // -------------------------------------------------
+    // PATTERN 2: REALITY SWEEP
+    // Diagonal projectiles across the arena.
+    // -------------------------------------------------
+
+    if (pattern === 2) {
+
+        const count = phase === 1 ? 8 : phase === 2 ? 10 : 12;
+
+        for (let i = 0; i < count; i++) {
+
+            const x =
+                40 + i * ((W - 80) / (count - 1));
+
+            spawnProjectile(
+                x,
+                85,
+                i % 2 === 0 ? speed(0.9) : -speed(0.9),
+                speed(3.0),
+                9
+            );
+        }
+
+        // Horizontal sweep from both sides.
+        for (let i = 0; i < 4; i++) {
+
+            const y = 110 + i * 65;
+
+            spawnProjectile(
+                40,
+                y,
+                speed(3.5),
+                0,
+                9
+            );
+
+            spawnProjectile(
+                W - 40,
+                y,
+                -speed(3.5),
+                0,
+                9
+            );
+        }
+
+        return;
+    }
+
+
+    // -------------------------------------------------
+    // PATTERN 3: HYPER COSMIC BURST
+    // Radial attack in every direction.
+    // -------------------------------------------------
+
+    if (pattern === 3) {
+
+        const count = phase === 1 ? 14 : phase === 2 ? 18 : 22;
+
+        const centerX = W / 2;
+        const centerY = 210;
+
+        for (let i = 0; i < count; i++) {
+
+            const angle =
+                Math.PI * 2 * i / count;
+
+            spawnProjectile(
+                centerX,
+                centerY,
+                Math.cos(angle) * speed(3.3),
+                Math.sin(angle) * speed(3.3),
+                9
+            );
+        }
+
+        return;
+    }
+
+
+    // -------------------------------------------------
+    // PATTERN 4: CROSS-DIMENSIONAL LOCK
+    // Aimed shots + falling projectiles.
+    // -------------------------------------------------
+
+    if (pattern === 4) {
+
+        const sources = [
+            [W / 2, 88],
+            [45, 210],
+            [W - 45, 210],
+            [W / 2, 335]
+        ];
+
+        for (const [x, y] of sources) {
+
+            adVincentAimProjectile(
+                x,
+                y,
+                heart.x,
+                heart.y,
+                speed(3.8),
+                10
+            );
+        }
+
+        const count = phase === 1 ? 7 : phase === 2 ? 9 : 11;
+
+        for (let i = 0; i < count; i++) {
+
+            const x =
+                45 + i * ((W - 90) / (count - 1));
+
+            spawnProjectile(
+                x,
+                85,
+                0,
+                speed(3.2),
+                8
+            );
+        }
+
+        return;
+    }
+
+
+    // -------------------------------------------------
+    // PATTERN 5: HE KNOWS EVERYTHING
+    // Final combination attack.
+    // -------------------------------------------------
+
+    if (pattern === 5) {
+
+        // Aimed fan.
+        const angle = Math.atan2(
+            heart.y - 95,
+            heart.x - W / 2
+        );
+
+        const fanCount = phase === 1 ? 7 : phase === 2 ? 9 : 11;
+
+        for (let i = 0; i < fanCount; i++) {
+
+            const offset =
+                i - (fanCount - 1) / 2;
+
+            const shotAngle =
+                angle + offset * 0.17;
+
+            spawnProjectile(
+                W / 2,
+                95,
+                Math.cos(shotAngle) * speed(4.0),
+                Math.sin(shotAngle) * speed(4.0),
+                9
+            );
+        }
+
+        // Full-width rain.
+        const rainCount = phase === 1 ? 9 : phase === 2 ? 11 : 13;
+
+        for (let i = 0; i < rainCount; i++) {
+
+            const x =
+                40 + i * ((W - 80) / (rainCount - 1));
+
+            spawnProjectile(
+                x,
+                75,
+                0,
+                speed(3.4),
+                8
+            );
+        }
+
+        // Side pressure.
+        for (let i = 0; i < 3; i++) {
+
+            const y = 125 + i * 85;
+
+            spawnProjectile(
+                40,
+                y,
+                speed(3.2),
+                0,
+                9
+            );
+
+            spawnProjectile(
+                W - 40,
+                y,
+                -speed(3.2),
+                0,
+                9
+            );
+        }
+
+        return;
+    }
+};
+
+console.log("VINCENT ANTI-CAMPING ATTACK SYSTEM LOADED");
