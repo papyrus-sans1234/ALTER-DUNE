@@ -364,9 +364,9 @@ createEnemyAttack = function (enemy) {
 
     // Each phase gets faster.
     const speedMultiplier = [
-        1,
-        1.30,
-        1.65
+    0.75,
+    0.85,
+    0.95
     ][phase - 1];
 
     // Six different patterns.
@@ -594,38 +594,45 @@ createEnemyAttack = function (enemy) {
 
 
 
+
 // =====================================================
-// 9B. VINCENT MULTI-ATTACK PER ROUND
+// 9B. VINCENT SEQUENTIAL ATTACK WAVES
 // =====================================================
 
-// Preserve the existing six-pattern attack system.
+const AD_VINCENT_WAVES = {
+    active: false,
+    wave: 0,
+    total: 0,
+    pattern: 0
+};
+
 const AD_VINCENT_SINGLE_ATTACK = createEnemyAttack;
 
 createEnemyAttack = function (enemy) {
-
     if (!enemy || enemy.id !== "vincent") {
         return AD_VINCENT_SINGLE_ATTACK(enemy);
     }
 
-    const maxHP = enemy.maxHp || 360;
+    // Always use the same pattern throughout this turn.
+    enemy.attackCount = AD_VINCENT_WAVES.pattern;
 
-    const phase =
-        enemy.hp <= maxHP / 3 ? 3 :
-        enemy.hp <= (maxHP * 2) / 3 ? 2 : 1;
+    AD_VINCENT_SINGLE_ATTACK(enemy);
+};
 
-    // Number of complete attack patterns per round.
-    const attacksPerRound = phase;
 
-    for (let i = 0; i < attacksPerRound; i++) {
-        AD_VINCENT_SINGLE_ATTACK(enemy);
+const AD_VINCENT_OLD_BEGIN_TURN = beginEnemyTurn;
+
+beginEnemyTurn = function () {
+    if (battle.enemy?.id === "vincent") {
+        AD_VINCENT_WAVES.active = false;
+        AD_VINCENT_WAVES.wave = 0;
+        AD_VINCENT_WAVES.total = 0;
     }
 
-    console.log(
-        "VINCENT ATTACK ROUND:",
-        attacksPerRound,
-        "attack patterns"
-    );
+    AD_VINCENT_OLD_BEGIN_TURN();
 };
+
+
 
 
 
