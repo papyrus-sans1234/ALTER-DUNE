@@ -1112,6 +1112,7 @@ const AD_GENOCIDE = {
 // SYNTHESIZED VINCENT LAUGH
 // -----------------------------------------------------
 
+
 function adPlayVincentLaugh() {
     try {
         const AudioContextClass =
@@ -1122,40 +1123,63 @@ function adPlayVincentLaugh() {
         const audio = new AudioContextClass();
         const now = audio.currentTime;
 
-        const notes = [
-            [110, 0],
-            [82, 0.35],
-            [98, 0.7],
-            [65, 1.05],
-            [73, 1.4]
+        // Each pair represents one "HA" syllable:
+        // [start time, pitch, duration]
+        const laughs = [
+            [0.00, 390, 0.13],
+            [0.22, 470, 0.12],
+            [0.48, 350, 0.16],
+            [0.78, 510, 0.12],
+            [1.02, 420, 0.15],
+            [1.35, 300, 0.22],
+            [1.75, 440, 0.13],
+            [2.02, 330, 0.28]
         ];
 
-        for (const [frequency, delay] of notes) {
+        for (const [delay, frequency, duration] of laughs) {
+            const start = now + delay;
+
             const oscillator = audio.createOscillator();
             const gain = audio.createGain();
 
-            oscillator.type = "sawtooth";
+            const filter = audio.createBiquadFilter();
+
+            oscillator.type = "triangle";
+
             oscillator.frequency.setValueAtTime(
                 frequency,
-                now + delay
+                start
             );
 
-            gain.gain.setValueAtTime(0, now + delay);
+            oscillator.frequency.exponentialRampToValueAtTime(
+                frequency * 0.72,
+                start + duration
+            );
+
+            filter.type = "lowpass";
+            filter.frequency.setValueAtTime(1800, start);
+
+            gain.gain.setValueAtTime(0, start);
             gain.gain.linearRampToValueAtTime(
-                0.16,
-                now + delay + 0.08
+                0.22,
+                start + 0.025
             );
             gain.gain.exponentialRampToValueAtTime(
                 0.001,
-                now + delay + 0.65
+                start + duration
             );
 
-            oscillator.connect(gain);
+            oscillator.connect(filter);
+            filter.connect(gain);
             gain.connect(audio.destination);
 
-            oscillator.start(now + delay);
-            oscillator.stop(now + delay + 0.7);
+            oscillator.start(start);
+            oscillator.stop(start + duration + 0.02);
         }
+
+        setTimeout(() => {
+            audio.close();
+        }, 3500);
 
     } catch (error) {
         console.warn("Vincent laugh could not play:", error);
