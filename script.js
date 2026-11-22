@@ -3457,8 +3457,18 @@ function updateBattle() {
             battle.lastDamage = damage;
 
             if (player.hp <= 0) {
-                triggerGameOver();
-            }
+            player.hp = 0;
+
+    triggerGameOver();
+
+    // HARD STOP: no more battle after defeat.
+    gameOver = true;
+    battleOpen = false;
+    battle.bullets = [];
+    keys = {};
+
+    return;
+}
         }
 
         if (
