@@ -1231,8 +1231,7 @@ drawDestroyedCastle = function () {
 // -----------------------------------------------------
 
 function adStartGenocideEnding() {
-    if (AD_GENOCIDE.active || AD_GENOCIDE.complete) return;
-
+    if (AD_GENOCIDE.active) return;
     AD_GENOCIDE.active = true;
     endingStarted = true;
 
