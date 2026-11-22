@@ -1908,3 +1908,90 @@ adPlayVincentLaugh = function () {
     }
 };
 
+
+/* =====================================================
+   ALTER DUNE — FINAL ENDING SEQUENCE FIX
+   Correct screen timing + real Vincent laugh
+   ===================================================== */
+
+// Replace the ending starter completely.
+// This prevents the old function from playing
+// the laugh immediately.
+
+adStartGenocideEnding = function () {
+
+    if (AD_GENOCIDE.active) return;
+
+    AD_GENOCIDE.active = true;
+    AD_GENOCIDE.stage = "main";
+
+    endingStarted = true;
+
+    localStorage.setItem(
+        "adGenocideComplete",
+        "true"
+    );
+
+    paused = true;
+    battleOpen = false;
+    dialogueOpen = false;
+    inventoryOpen = false;
+    gameOver = false;
+    keys = {};
+
+    // Prepare the real laugh, but DO NOT play it yet.
+    AD_VINCENT_REAL_LAUGH.pause();
+    AD_VINCENT_REAL_LAUGH.currentTime = 0;
+    AD_VINCENT_REAL_LAUGH_PLAYED = false;
+
+    // STAGE 1: ORIGINAL ENDING
+    // ALTERDUNE — YOU KILLED EVERYONE
+    // Displayed for 3.5 seconds.
+
+    setTimeout(() => {
+
+        if (!AD_GENOCIDE.active) return;
+
+        // STAGE 2: COMPLETE DARKNESS
+        AD_GENOCIDE.stage = "black";
+
+    }, 3500);
+
+
+    // STAGE 3: FINAL MESSAGE + REAL LAUGH
+    // These happen together at 6 seconds.
+
+    setTimeout(() => {
+
+        if (!AD_GENOCIDE.active) return;
+
+        AD_GENOCIDE.stage = "final";
+
+        if (!AD_VINCENT_REAL_LAUGH_PLAYED) {
+
+            AD_VINCENT_REAL_LAUGH_PLAYED = true;
+
+            AD_VINCENT_REAL_LAUGH.currentTime = 0;
+
+            const playback =
+                AD_VINCENT_REAL_LAUGH.play();
+
+            if (playback && playback.catch) {
+                playback.catch(error => {
+                    console.warn(
+                        "Vincent's laugh could not play:",
+                        error
+                    );
+                });
+            }
+        }
+
+    }, 6000);
+
+};
+
+console.log(
+    "VINCENT FINAL ENDING FIX LOADED"
+);
+
+
