@@ -1,7 +1,6 @@
 // =====================================================
 // ALTER DUNE - DEMO 0.9
 // THE HUNT BEGINS
-// PART 1 OF 3
 // =====================================================
 
 
@@ -4923,3 +4922,43 @@ console.log(
     "%cALTER DUNE 2.2 — SPRITE SYSTEM READY",
     "color: #d6a64b; font-weight: bold;"
 );
+
+/* =====================================================
+   ALTER DUNE — HUNTER REWARD: SPEAR
+   ===================================================== */
+
+// Register the new weapon.
+itemInfo.spear = {
+    name: "Spear",
+    type: "weapon",
+    power: 14
+};
+
+// Detect the Hunter's defeat.
+const AD_OLD_HUNTER_DEFEAT = handleEnemyDefeat;
+
+handleEnemyDefeat = function (enemy) {
+
+    if (enemy && enemy.id === "hunter" && !hasItem("spear")) {
+
+        // Run the original defeat sequence.
+        AD_OLD_HUNTER_DEFEAT(enemy);
+
+        // Automatically reward the player.
+        addItem("spear");
+
+        // Announce the reward after the original dialogue.
+        setTimeout(() => {
+            showDialogue(
+                "NARRATOR",
+                "You obtained the SPEAR!."
+            );
+        }, 900);
+
+        return;
+    }
+
+    AD_OLD_HUNTER_DEFEAT(enemy);
+};
+
+console.log("SPEAR REWARD SYSTEM LOADED");
