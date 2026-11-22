@@ -1221,51 +1221,34 @@ function adStartGenocideEnding() {
 }
 
 // -----------------------------------------------------
-// VOID DOOR INTERACTION
+// VOID DOOR INTERACTION — FIXED
 // -----------------------------------------------------
 
 const AD_OLD_INTERACT_VOID = interact;
 
 interact = function () {
     if (castleDestroyed) {
-        const playerCenterX = player.x + TILE / 2;
-        const playerCenterY = player.y + TILE / 2;
 
-        const doorCenterX =
-            AD_GENOCIDE.doorX * TILE + TILE / 2;
-
-        const doorCenterY =
-            AD_GENOCIDE.doorY * TILE + TILE / 2;
-
-        const distance = Math.hypot(
-            playerCenterX - doorCenterX,
-            playerCenterY - doorCenterY
-        );
-
-        if (distance < 55) {
-            if (
-                localStorage.getItem("adVincentDefeated") !== "true"
-            ) {
-                showDialogue(
-                    "THE VOID",
-                    "The door refuses to open."
-                );
-                return;
-            }
-
-            adStartGenocideEnding();
+        // Vincent must be defeated first.
+        if (
+            localStorage.getItem("adVincentDefeated") !== "true"
+        ) {
+            showDialogue(
+                "THE VOID",
+                "The door refuses to open."
+            );
             return;
         }
 
-        showDialogue(
-            "THE VOID",
-            "There is nothing left here."
-        );
+        // The destroyed castle has no other interactable objects.
+        // Interacting anywhere in the void opens the ending.
+        adStartGenocideEnding();
         return;
     }
 
     AD_OLD_INTERACT_VOID();
 };
+
 
 // -----------------------------------------------------
 // PERSISTENT ENDING SCREEN
