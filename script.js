@@ -414,6 +414,7 @@ const itemInfo = {
 
 let inventory = [{ id: "wooden_sword", qty: 1 }];
 let equippedWeapon = "wooden_sword";
+let equippedItem = null; // LEFT HAND
 let selectedInventoryIndex = 0;
 
 function hasItem(id) {
@@ -440,6 +441,14 @@ function removeItem(id) {
 
     if (item.qty <= 0) {
         inventory = inventory.filter(i => i.id !== id);
+
+        if (equippedItem === id) {
+            equippedItem = null;
+        }
+
+        if (equippedWeapon === id) {
+            equippedWeapon = "wooden_sword";
+        }
     }
 
     selectedInventoryIndex = Math.min(
@@ -511,38 +520,19 @@ function useSelectedInventoryItem() {
         inventoryOpen = false;
 
         showDialogue(
-            "INVENTORY",
-            "Equipped " + info.name + "."
+            "RIGHT HAND",
+            "Equipped " + info.name + " in your right hand."
         );
         return;
     }
 
-    if (info.type === "healing") {
-        const used = useItem(item.id);
+    equippedItem = item.id;
+    inventoryOpen = false;
 
-        if (used) inventoryOpen = false;
-
-        showDialogue("ITEM", battle.message);
-        return;
-    }
-
-    if (info.type === "misc") {
-        showDialogue(
-            "INVENTORY",
-            "You examined the " + info.name + "."
-        );
-        return;
-    }
-
-    if (info.type === "key" || info.type === "treasure") {
-        showDialogue(
-            "INVENTORY",
-            "This item may be important later."
-        );
-        return;
-    }
-
-    showDialogue("INVENTORY", "You cannot use this item right now.");
+    showDialogue(
+        "LEFT HAND",
+        "Equipped " + info.name + " in your left hand."
+    );
 }
 
 // =====================================================
@@ -831,6 +821,7 @@ function saveGame() {
         currentRoom,
         inventory,
         equippedWeapon,
+		equippedItem,
         openedChests,
         checkpoint,
         enemies,
@@ -863,6 +854,7 @@ function loadGame() {
         currentRoom = data.currentRoom;
         inventory = data.inventory || [];
         equippedWeapon = data.equippedWeapon || "wooden_sword";
+        equippedItem = data.equippedItem || null;
         openedChests = data.openedChests || [];
         checkpoint = data.checkpoint || checkpoint;
 
@@ -955,6 +947,7 @@ function startNewGame() {
 
     inventory = [{ id: "wooden_sword", qty: 1 }];
     equippedWeapon = "wooden_sword";
+	equippedItem = null;
     selectedInventoryIndex = 0;
     openedChests = [];
 
@@ -4392,17 +4385,28 @@ function drawInventory() {
     ctx.font = "13px monospace";
 
     ctx.fillText(
-        "EQUIPPED: " + (itemInfo[equippedWeapon]?.name || "None"),
-        80, 110
+        "LEFT HAND: " +
+        (itemInfo[equippedItem]?.name || "Empty"),
+        80, 105
+    );
+
+    ctx.fillText(
+        "RIGHT HAND: " +
+        (itemInfo[equippedWeapon]?.name || "Empty"),
+        80, 125
     );
 
     inventory.forEach((item, i) => {
         const selected = i === selectedInventoryIndex;
-        const equipped = item.id === equippedWeapon;
+        const isWeapon = itemInfo[item.id]?.type === "weapon";
+
+        const equipped = isWeapon
+            ? item.id === equippedWeapon
+            : item.id === equippedItem;
 
         if (selected) {
             ctx.fillStyle = "#51445a";
-            ctx.fillRect(75, 130 + i * 22, 470, 20);
+            ctx.fillRect(75, 145 + i * 22, 470, 20);
         }
 
         ctx.fillStyle = selected
@@ -4414,16 +4418,17 @@ function drawInventory() {
         ctx.fillText(
             (selected ? "> " : "  ") +
             (itemInfo[item.id]?.name || item.id) +
-            " x" + item.qty,
+            " x" + item.qty +
+            (equipped ? " [EQUIPPED]" : ""),
             85,
-            145 + i * 22
+            160 + i * 22
         );
     });
 
     ctx.fillStyle = "#aaa";
     ctx.font = "11px monospace";
-    ctx.fillText("LEFT / RIGHT / JOYSTICK = SELECT ITEM", 80, 326);
-    ctx.fillText("Z = USE / EQUIP SELECTED ITEM", 80, 341);
+    ctx.fillText("ARROWS / JOYSTICK = SELECT", 80, 326);
+    ctx.fillText("Z = EQUIP TO APPROPRIATE HAND", 80, 341);
     ctx.fillText("X / I / ESC = CLOSE", 80, 356);
 }
 
@@ -4479,11 +4484,13 @@ function gameLoop() {
 
     const status = document.getElementById("playerStatus");
 
-    if (status) {
+        if (status) {
         status.textContent =
             "HP: " + player.hp + " / " + player.maxHp +
-            " | Weapon: " +
-            (itemInfo[equippedWeapon]?.name || "None");
+            " | Left: " +
+            (itemInfo[equippedItem]?.name || "Empty") +
+            " | Right: " +
+            (itemInfo[equippedWeapon]?.name || "Empty");
     }
 
     if (gameOver) drawGameOver();
