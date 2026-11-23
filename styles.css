@@ -580,3 +580,21 @@ footer {
         line-height: 1.35;
     }
 }
+
+
+/* ALTER DUNE — REMOVE MOBILE BLUE TAP HIGHLIGHT */
+
+* {
+    -webkit-tap-highlight-color: transparent;
+}
+
+button,
+a,
+input,
+textarea,
+select,
+canvas {
+    -webkit-tap-highlight-color: transparent;
+}
+
+
